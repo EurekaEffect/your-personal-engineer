@@ -13,6 +13,8 @@
 // @run-at       document-start
 // ==/UserScript==
 
+// TODO: додати кнопку на stats/classifieds яка дасть змогу перевірити обмін перед його надсиланням (запобіжник)
+
 const button_color = '#b98fc8';
 const button_hint = 'Click to send an Instant Trade Offer.';
 
@@ -172,6 +174,7 @@ function awaitDocumentReady() {
     })
 }
 
+// I need this for the future updates.
 /*
 if (intent === 'sell') {
                 // Sell order.

@@ -4,8 +4,8 @@
 // @author          https://steamcommunity.com/id/EurekaEffect/
 // @version         1.0
 
-// @updateURL       ~
-// @downloadURL     ~
+// @updateURL       https://github.com/EurekaEffect/your-personal-engineer/raw/refs/heads/master/ype.user.js
+// @downloadURL     https://github.com/EurekaEffect/your-personal-engineer/raw/refs/heads/master/ype.user.js
 
 // @match           *://backpack.tf/stats/*
 // @match           *://backpack.tf/classifieds*

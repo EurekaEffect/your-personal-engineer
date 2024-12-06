@@ -82,7 +82,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                         // The item is a paint can.
                     } else {
                         // Adding the paint to the descriptions.
-                        modifications['paint'] = 'paint_name'
+                        modifications['paint'] = paint_name
                     }
                 }
 

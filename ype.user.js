@@ -78,7 +78,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
 
                 if ($item.hasAttribute('data-paint_name')) {
                     if (item_name === paint_name) {
-                        // The item is the paint can.
+                        // The item is a paint can.
                     } else {
                         // Adding the paint to the descriptions.
                         modifications['paint'] = 'paint_name'

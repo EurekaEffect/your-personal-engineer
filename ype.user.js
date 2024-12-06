@@ -18,7 +18,7 @@ const button_hint = 'Click to send an Instant Trade Offer.'
 
 const trade_offer_page = {
     'you': window['UserYou'],
-    'partner': window['UserThem'],
+    'them': window['UserThem'],
     'session_id': window['g_sessionID'],
     'partner_steam_id': window['g_ulTradePartnerSteamID']
 };

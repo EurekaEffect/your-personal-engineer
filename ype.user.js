@@ -26,14 +26,13 @@ const trade_offer_page = {
 (async function () {
     await awaitDocumentReady()
 
-    // backpack.tf
     const listings = document.querySelectorAll('.listing')
 
     for (const listing of listings) {
         const item = listing.querySelector('.item')
 
         const asset_id = item.getAttribute('data-id')
-        const price = encodeURI('{ "keys": 0, "metal": 5.22 }' /*TODO*/)
+        const price = encodeURI('{ "keys": 0, "metal": 5.22 }' /* TODO create a function that converts price argument to json */)
 
         const buttons = listing.querySelector('.listing-buttons')
 

@@ -76,6 +76,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                     }
                 }
 
+                // Handling the paint attribute.
                 if ($item.hasAttribute('data-paint_name')) {
                     if (item_name === paint_name) {
                         // The item is a paint can.
@@ -85,6 +86,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                     }
                 }
 
+                // Handling the killstreak attributes.
                 if ($item.hasAttribute('data-ks_tier')) {
                     // Adding the killstreaker.
                     modifications['ks'] = []
@@ -100,6 +102,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                     }
                 }
 
+                // Handling the spell attributes.
                 if ($item.hasAttribute('data-spell_1')) {
                     function toSpellName(data_spell) {
                         return data_spell.split(':')[1].trim()
@@ -116,6 +119,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                     }
                 }
 
+                // Handling the strange part attributes.
                 if ($item.hasAttribute('data-part_name_1')) {
                     // Adding the first strange part.
                     modifications['parts'] = [strange_part_1]
@@ -133,7 +137,7 @@ const button_hint = 'Click to send an Instant Trade Offer.';
 
                 if (Object.keys(modifications).length > 0) {
                     const encoded_descriptions = encodeURI(JSON.stringify(modifications))
-                    $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.descriptions=${encoded_descriptions}&ype.price=${price}`)
+                    $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.price=${price}&ype.descriptions=${encoded_descriptions}`)
                 } else {
                     $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.price=${price}`)
                 }

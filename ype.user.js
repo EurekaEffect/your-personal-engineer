@@ -16,7 +16,10 @@
 // TODO: додати кнопку на stats/classifieds яка дасть змогу перевірити обмін перед його надсиланням (запобіжник)
 
 const button_color = '#b98fc8';
+const button_color_warning = '#ef4363';
+
 const button_hint = 'Click to send an Instant Trade Offer.';
+const button_hint_warning = 'Warning! Double-check the item that the script will add and make sure it is the correct one. Click to send an Instant Trade Offer.';
 
 (async function () {
     await awaitDocumentReady()
@@ -65,6 +68,12 @@ const button_hint = 'Click to send an Instant Trade Offer.';
             if (intent === 'sell') {
                 // Sell order.
                 $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.asset_id=${asset_id}&ype.price=${price}`)
+                $instant_trade_offer_button.setAttribute('title', button_hint)
+
+                Object.assign($instant_trade_offer_button.style, {
+                    backgroundColor: button_color,
+                    borderColor: button_color
+                })
             } else {
                 // Buy order.
                 const modifications = {}
@@ -83,24 +92,25 @@ const button_hint = 'Click to send an Instant Trade Offer.';
                     if (item_name === paint_name) {
                         // The item is a paint can.
                     } else {
-                        // Adding the paint to the descriptions.
-                        modifications['paint'] = paint_name
+                        modifications['paint'] = paint_name // Adding the paint to the descriptions.
                     }
                 }
 
                 // Handling the killstreak attributes.
                 if ($item.hasAttribute('data-ks_tier')) {
-                    // Adding the killstreaker.
-                    modifications['ks'] = []
+                    const is_sheen_present = $item.hasAttribute('data-sheen')
+                    const is_effect_present = $item.hasAttribute('data-killstreaker')
 
-                    if ($item.hasAttribute('data-sheen')) {
-                        // Adding the sheen to the descriptions.
-                        modifications['ks'].push(killstreak_sheen)
-                    }
+                    if (is_sheen_present || is_effect_present) {
+                        modifications['ks'] = [] // Adding the killstreaker.
 
-                    if ($item.hasAttribute('data-killstreaker')) {
-                        // Adding the effect to the descriptions.
-                        modifications['ks'].push(killstreak_effect)
+                        if (is_sheen_present) {
+                            modifications['ks'].push(killstreak_sheen) // Adding the sheen to the descriptions.
+                        }
+
+                        if (is_effect_present) {
+                            modifications['ks'].push(killstreak_effect) // Adding the effect to the descriptions.
+                        }
                     }
                 }
 
@@ -139,18 +149,19 @@ const button_hint = 'Click to send an Instant Trade Offer.';
 
                 if (Object.keys(modifications).length > 0) {
                     const encoded_descriptions = encodeURI(JSON.stringify(modifications))
+
                     $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.price=${price}&ype.descriptions=${encoded_descriptions}`)
                 } else {
                     $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.price=${price}`)
                 }
+
+                $instant_trade_offer_button.setAttribute('title', button_hint_warning)
+
+                Object.assign($instant_trade_offer_button.style, {
+                    backgroundColor: button_color_warning,
+                    borderColor: button_color_warning
+                })
             }
-
-            $instant_trade_offer_button.setAttribute('title', button_hint)
-
-            Object.assign($instant_trade_offer_button.style, {
-                backgroundColor: button_color,
-                borderColor: button_color
-            })
 
             $buttons.append($instant_trade_offer_button)
         } else {
@@ -174,69 +185,118 @@ function awaitDocumentReady() {
     })
 }
 
-// I need this for the future updates.
-/*
-if (intent === 'sell') {
-                // Sell order.
-                $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.asset_id=${asset_id}&ype.price=${price}`)
+/* Trade Offer Section */
+function addItemToTradeOffer(asset_id) {
+    const your_side = window['g_rgCurrentTradeStatus']['me']['assets']
+    const their_side = window['g_rgCurrentTradeStatus']['them']['assets']
+
+    asset_id = String(asset_id) // asset_id's should be treated as string.
+
+    const $item = document.querySelector(`#item440_2_${asset_id}`)
+
+    if ($item) {
+        const item = $item['rgItem']
+        const is_their_item = item['is_their_item']
+        const side = (is_their_item ? their_side : your_side)
+
+        const is_in_trade = side.find((item) => item['assetid'] === asset_id)
+
+        if (is_in_trade) {
+            error(`Item with asset_id '${asset_id}' is already in a trade offer.`)
+        } else {
+            side.push({
+                appid: 440,
+                contextid: '2',
+                amount: 1,
+                assetid: asset_id
+            })
+
+            window['GTradeStateManager']['m_bChangesMade'] = true
+            window['g_rgCurrentTradeStatus']['version']++
+        }
+    } else {
+        error(`Item with asset_id '${asset_id}' was not found.`)
+    }
+}
+
+function removeItemFromTradeOffer(asset_id) {
+    const $item = document.querySelector(`#item440_2_${asset_id}`)
+
+    if ($item) {
+        const item = $item['rgItem']
+
+        if (window['BIsInTradeSlot'](item)) {
+            window['GTradeStateManager']['RemoveItemFromTrade'](item)
+        } else {
+            error(`Item with asset_id '${asset_id}' is not in a trade slot.`)
+        }
+    } else {
+        error(`Item with asset_id '${asset_id}' was not found.`)
+    }
+}
+
+function updateRenderingItems() {
+    window['RefreshTradeStatus'](window['g_rgCurrentTradeStatus'])
+}
+
+async function getTheirInventory() {
+    const them = window['UserThem']
+
+    function preloadTheirInventoryElements() {
+        const inventory = them['getInventory'](440, 2)
+        const $inventory = inventory['elInventory']
+
+        inventory['Initialize']()
+        inventory['MakeActive']()
+
+        $inventory.style.display = 'none' // Hiding their inventory to prevent overlapping.
+    }
+
+    return await new Promise(async (resolve, reject) => {
+        const tf2_inventory_presents = them['rgContexts'][440]
+
+        if (!tf2_inventory_presents) {
+            error(`tf2_inventory_not_present`)
+            resolve([])
+            return
+        }
+
+        preloadTheirInventoryElements()
+
+        const timeout = setTimeout(() => {
+            error(`Can't load the inventory.`)
+            resolve([])
+        }, 15_000)
+
+        while (true) {
+            const inventory = them['getInventory'](440, 2)
+
+            if (inventory['rgInventory']) {
+                clearTimeout(timeout)
+                resolve(inventory)
+                break
             } else {
-                // Buy order.
-
-                const descriptions = []
-
-                if (item_name.includes('Unusual')) {
-                    if (item_name.includes("Horseless Headless Horsemann's Headtaker") || item_name.includes('Metal Scrap')) {
-                        // Treat like a normal listing.
-                    } else {
-                        // Skip, the listing doesn't have an unusual effect.
-                        continue
-                    }
-                }
-
-                if ($item.hasAttribute('data-paint_name')) {
-                    if (item_name === paint_name) {
-                        // The item is the paint can.
-                    } else {
-                        // Adding the paint to the descriptions.
-                        descriptions.push({value: `Paint Color: ${paint_name}`})
-                    }
-                }
-
-                if ($item.hasAttribute('data-ks_tier')) {
-                    if ($item.hasAttribute('data-sheen')) {
-                        // Adding the sheen to the descriptions.
-                        descriptions.push({ value: `Sheen: ${killstreak_sheen}` })
-                    }
-
-                    if ($item.hasAttribute('data-killstreaker')) {
-                        // Adding the effect to the descriptions.
-                        descriptions.push({ value: `Killstreaker: ${killstreak_effect}` })
-                    }
-
-                    // Adding the killstreaker.
-                    descriptions.push({ value: `Killstreaks Active` })
-                }
-
-                if ($item.hasAttribute('data-spell_1')) {
-                    function toDescription(data_spell) {
-                        const spell_name = data_spell.split(':')[1].trim()
-                        return `Halloween: ${spell_name} (spell only active during event)`
-                    }
-
-                    // Adding the first spell.
-                    descriptions.push({ value: toDescription(spell_1) })
-
-                    if ($item.hasAttribute('data-spell_2')) {
-                        // Adding the second spell.
-                        descriptions.push({ value: toDescription(spell_2) })
-                    }
-                }
-
-                if (descriptions.length > 0) {
-                    const encoded_descriptions = encodeURI(JSON.stringify(descriptions))
-                    $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.descriptions=${encoded_descriptions}&ype.price=${price}`)
-                } else {
-                    $instant_trade_offer_button.setAttribute('href', `${trade_offer_url}&ype.item_name=${item_name}&ype.price=${price}`)
-                }
+                await new Promise((resolve, reject) => setTimeout(resolve, 1))
             }
- */
+        }
+    })
+}
+/* Trade Offer Section */
+
+/* Misc */
+function error(message) {
+    alert(`Script: Your Personal Engineer\nMessage: ${message}`)
+    throw Error(message)
+}
+/* Misc */
+
+// I need this for the future updates.
+// descriptions.push({value: `Paint Color: ${paint_name}`})
+// descriptions.push({ value: `Sheen: ${killstreak_sheen}` })
+// descriptions.push({ value: `Killstreaker: ${killstreak_effect}` })
+// descriptions.push({ value: `Killstreaker: ${killstreak_effect}` })
+// function toDescription(data_spell) {
+//     const spell_name = data_spell.split(':')[1].trim()
+//     return `Halloween: ${spell_name} (spell only active during event)`
+// }
+// descriptions.push({ value: toDescription(spell_1) })

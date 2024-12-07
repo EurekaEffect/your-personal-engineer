@@ -10,6 +10,7 @@ This means that the script is still in development and is not intended for daily
 ### TODO
 
 - **One-Click Offer**
+    - Add buttons for turning on/off avoidance of the same items and double check
     - Avoid reusing the same items
     - Round metal from 0.05 to 0.11
 

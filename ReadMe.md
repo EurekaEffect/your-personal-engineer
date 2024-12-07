@@ -1,6 +1,6 @@
 ### Your Personal Engineer
 
-This is a browser extension that includes automation for tasks previously performed by traders, as well as displays additional information on backpack.tf (support for next.backpack.tf is not planned).
+This is a browser extension that includes automation for tasks previously performed by traders, as well as displays additional information on [backpack.tf](https://backpack.tf) (support for [next.backpack.tf](https://next.backpack.tf) is not planned).
 
 ### Disclaimer
 
@@ -19,8 +19,8 @@ This means that the script is still in development and is not intended for daily
 
 --- 
 ### Thanks to
-- Brom127, I got inspired by his One-Click Offer browser extension.
-- TamperMonkey, I'm using it to run YPE.
+- [Brom127](https://github.com/peleicht), I got inspired by his [One-Click Offer](https://github.com/peleicht/backpack-offer-sender) browser extension.
+- [TamperMonkey](https://www.tampermonkey.net/), I'm using it to run YPE.
 ---
 
 ### Contribution

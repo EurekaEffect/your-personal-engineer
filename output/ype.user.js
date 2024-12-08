@@ -10,7 +10,7 @@
 // @match           *://backpack.tf/stats/*
 // @match           *://backpack.tf/classifieds*
 
-// @run-at       document-start
+// @run-at          document-start
 // ==/UserScript==
 
 // TODO: додати кнопку на stats/classifieds яка дасть змогу перевірити обмін перед його надсиланням (запобіжник)

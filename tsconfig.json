@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2016",
+    "module": "amd",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": false,
+    "skipLibCheck": true,
+    "outFile": "./output/ype.bundle.user.js"
+  },
+  // To build in order.
+  "include": [
+    "src/UserScript.ts", "src/Main.ts", "*.ts" ]
+}

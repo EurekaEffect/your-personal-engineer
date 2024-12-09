@@ -4,11 +4,25 @@
 // BTW even if I knew I'd use TS since it's way cooler than JS :sunglasses:.
 
 (async function () {
-    console.log('Main.ts')
+    await awaitDocumentReady()
+
+    // @ts-ignore
+    console.log(`window.UserThem: ${UserThem}`) // WHAT THE FUCK WHY window.UserThem DOESNT WORK BUT THIS DOES OH MY GOD I'VE SPENT 3 HOURS FOR DEBUGGING
 })()
 
 /* Logger */
 export function throwError(message: string) {
     alert(`Script: Your Personal Engineer\nMessage: ${message}`)
     throw Error(message)
+}
+
+/* Thanks Brom127 for the method! */
+function awaitDocumentReady(): Promise<void> {
+    return new Promise<void>((res) => {
+        if (document.readyState !== 'loading') {
+            res()
+        } else {
+            document.addEventListener('DOMContentLoaded', () => res())
+        }
+    })
 }

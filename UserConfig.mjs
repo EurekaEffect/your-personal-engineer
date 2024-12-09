@@ -17,6 +17,7 @@ const content = `// ==UserScript==
 
 // @match           *://backpack.tf/stats/*
 // @match           *://backpack.tf/classifieds*
+// @match           *://steamcommunity.com/tradeoffer/new*
 
 // @run-at          document-start
 // ==/UserScript==`;

@@ -5,6 +5,9 @@ module.exports = {
         filename: 'ype.bundle.user.js',
         publicPath: __dirname
     },
+    resolve: {
+        extensions: ['.ts', '.js', '.json']
+    },
     module: {
         rules: [{
             test: /\.ts$/,

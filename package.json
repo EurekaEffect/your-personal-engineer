@@ -1,7 +1,7 @@
 {
   "name": "your-personal-engineer",
   "version": "1.0.0",
-  "description": "This is a browser extension that includes automation for tasks previously performed by traders, as well as displays additional information on [backpack.tf](https://backpack.tf) (support for [next.backpack.tf](https://next.backpack.tf) is not planned).",
+  "description": " Makes your trading routine more comfortable.",
   "main": "src/Main.ts",
   "dependencies": {
     "acorn": "^8.14.0",

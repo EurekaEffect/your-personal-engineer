@@ -3,4 +3,12 @@
 // I will use it because I don't know how to divide a one single JS file into multiple files and make it work in TamperMonkey.
 // BTW even if I knew I'd use TS since it's way cooler than JS :sunglasses:.
 
-console.log('Main.ts')
+(async function () {
+    console.log('Main.ts')
+})()
+
+/* Logger */
+export function throwError(message: string) {
+    alert(`Script: Your Personal Engineer\nMessage: ${message}`)
+    throw Error(message)
+}

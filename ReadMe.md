@@ -24,6 +24,10 @@ This means that the script is still in development and is not intended for daily
 - [TamperMonkey](https://www.tampermonkey.net/), I'm using it to run YPE.
 ---
 
+### How to build
+
+<pre>npm run build</pre>
+
 ### Contribution
 
 Please, help me to get rid of my grammar mistakes :(

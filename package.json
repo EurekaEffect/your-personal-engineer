@@ -1,7 +1,7 @@
 {
   "name": "your-personal-engineer",
   "version": "1.0.0",
-  "description": " Makes your trading routine more comfortable.",
+  "description": "Makes your trading routine more comfortable.",
   "main": "src/Main.ts",
   "dependencies": {
     "acorn": "^8.14.0",

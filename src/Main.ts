@@ -3,66 +3,37 @@
 // I will use it because I don't know how to divide a one single JS file into multiple files and make it work in TamperMonkey.
 // BTW even if I knew I'd use TS since it's way cooler than JS :sunglasses:.
 
-import {addItemToTradeOffer, isTradeOfferUrl, refreshTradeStatus} from "./TradeOffer";
-import {awaitDocumentReady, executeConsoleScript, waitForChanges, waitForElementToBeAdded} from "./DocumentUtil";
+import {SetItemInTrade, isTradeOfferUrl, refreshTradeStatus} from "./TradeOffer";
 
 (async function () {
-    await awaitDocumentReady()
+    const is_trade_offer_page = isTradeOfferUrl(location.href)
 
-    if (isTradeOfferUrl(location.href)) {
+    if (is_trade_offer_page) {
         const params = new URLSearchParams(location.search)
 
         const asset_id = params.get('ype.asset_id')
         if (!asset_id) return
 
-        setTimeout(async () => {
-            async function yourScript() {
-                // @ts-ignore
-                const inventory = UserYou.getInventory(440, 2)
+        // Loading their inventory element.
+        window()['UserThem']['loadInventory'](440, 2)
 
-                inventory.Initialize()
-                inventory.MakeActive()
-            }
-            async function theirScript() {
-                // @ts-ignore
-                const inventory = UserThem.getInventory(440, 2)
-                const $inventory = inventory.elInventory
+        const prev_their_OnLoadInventoryComplete = window()['UserThem']['OnLoadInventoryComplete']
+        window()['UserThem']['OnLoadInventoryComplete'] = function (transport: any, appid: any, contextid: any ) {
+            window()['UserThem']['OnLoadInventoryComplete'] = prev_their_OnLoadInventoryComplete
+            window()['UserThem']['OnLoadInventoryComplete'](transport, appid, contextid) // Running the original function that will add their inventory element, required for the next code.
 
-                inventory.Initialize()
-                inventory.MakeActive()
+            // Loading their items.
+            const inventory = window()['UserThem']['getInventory'](440, 2)
+            inventory['Initialize']()
+            inventory['MakeActive']()
 
-                $inventory.style.display = 'none'
-            }
+            // Hiding the inventory because it overlaps ours.
+            window()['g_ActiveInventory'] = inventory
+            window()['g_ActiveInventory']['hide']()
+            window()['SelectInventoryFromUser'](window()['UserYou'], 440, 2, false)
 
-            // First execution adds the partner's inventory.
-            executeConsoleScript(theirScript).then(async () => {
-                const user_id_64 = getWindow()['UserThem']['GetSteamId']()
-                const id = `#inventory_${user_id_64}_440_2`
-
-                await waitForElementToBeAdded(id)
-
-                waitForChanges(id).then(() => {
-                    addItemToTradeOffer(asset_id)
-                    refreshTradeStatus()
-                })
-
-                // Second execution fills their inventory with items.
-                await executeConsoleScript(theirScript)
-                console.log('their')
-            })
-
-            // First execution adds the partner's inventory.
-            executeConsoleScript(yourScript).then(async () => {
-                const user_id_64 = getWindow()['UserYou']['GetSteamId']()
-                const id = `#inventory_${user_id_64}_440_2`
-
-                await waitForElementToBeAdded(id)
-
-                // Second execution fills their inventory with items.
-                await executeConsoleScript(yourScript)
-                console.log('your')
-            })
-        }, 1)
+            SetItemInTrade(asset_id)
+        }
     }
 })()
 
@@ -72,7 +43,7 @@ export function throwError(message: string) {
     throw Error(message)
 }
 
-export function getWindow(): object {
+export function window(): object {
     // @ts-ignore
     return unsafeWindow
 }

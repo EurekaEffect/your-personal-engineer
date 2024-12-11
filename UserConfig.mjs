@@ -19,7 +19,7 @@ const content = `// ==UserScript==
 // @match           *://backpack.tf/classifieds*
 // @match           *://steamcommunity.com/tradeoffer/new*
 
-// @run-at          document-start
+// @run-at          document-idle
 // ==/UserScript==`;
 
 (async function () {

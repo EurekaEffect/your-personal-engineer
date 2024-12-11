@@ -1,7 +1,51 @@
-import {getWindow, throwError} from "./Main";
+import {window, throwError} from "./Main";
 
-export function addItemToTradeOffer(asset_id: string) {
-    const your_side = getWindow()['g_rgCurrentTradeStatus']['me']['assets']
+export function SetItemsInTrade(asset_ids: string[]) {
+    const CTradeOfferStateManager = window()['CTradeOfferStateManager']
+
+    const prev_UpdateTradeStatus = CTradeOfferStateManager['UpdateTradeStatus']
+    // This function slow-downs adding an item to the trade offer,
+    // so we overriding it and setting it back later.
+    CTradeOfferStateManager['UpdateTradeStatus'] = function () {}
+
+    for (let asset_id of asset_ids) {
+        const $item = document.querySelector(`#item440_2_${asset_id}`)
+
+        if ($item) {
+            const item = $item['rgItem']
+            const is_in_trade_slot = window()['BIsInTradeSlot'](item)
+
+            if (is_in_trade_slot) {
+                throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+            } else {
+                CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
+            }
+        } else {
+            throwError(`Item with id '${asset_id}' not found.`)
+        }
+    }
+
+    CTradeOfferStateManager['UpdateTradeStatus'] = prev_UpdateTradeStatus
+    CTradeOfferStateManager['UpdateTradeStatus']()
+}
+
+export function SetItemInTrade(asset_id: string) {
+    const $item = document.querySelector(`#item440_2_${asset_id}`)
+
+    if ($item) {
+        const item = $item['rgItem']
+        const is_in_trade_slot = window()['BIsInTradeSlot'](item)
+
+        if (is_in_trade_slot) {
+            throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+        } else {
+            window()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
+        }
+    } else {
+        throwError(`Item with id '${asset_id}' not found.`)
+    }
+
+    /*const your_side = getWindow()['g_rgCurrentTradeStatus']['me']['assets']
     const their_side = getWindow()['g_rgCurrentTradeStatus']['them']['assets']
 
     const $item = document.querySelector(`#item440_2_${asset_id}`)
@@ -28,13 +72,13 @@ export function addItemToTradeOffer(asset_id: string) {
         }
     } else {
         throwError(`Item with asset_id '${asset_id}' was not found.`)
-    }
+    }*/
 }
 
 export function removeItemFromTradeOffer(asset_id: string) {}
 
 export function refreshTradeStatus() {
-    getWindow()['RefreshTradeStatus'](getWindow()['g_rgCurrentTradeStatus'])
+    window()['RefreshTradeStatus'](window()['g_rgCurrentTradeStatus'])
 }
 
 export function isTradeOfferUrl(url: string) {

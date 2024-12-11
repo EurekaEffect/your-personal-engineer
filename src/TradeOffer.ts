@@ -1,7 +1,7 @@
-import {window, throwError} from "./Main";
+import {getWindow, throwError} from "./Main";
 
 export function SetItemsInTrade(asset_ids: string[]) {
-    const CTradeOfferStateManager = window()['CTradeOfferStateManager']
+    const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
 
     const prev_UpdateTradeStatus = CTradeOfferStateManager['UpdateTradeStatus']
     // This function slow-downs adding an item to the trade offer,
@@ -13,7 +13,7 @@ export function SetItemsInTrade(asset_ids: string[]) {
 
         if ($item) {
             const item = $item['rgItem']
-            const is_in_trade_slot = window()['BIsInTradeSlot'](item)
+            const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
 
             if (is_in_trade_slot) {
                 throwError(`Item with id '${asset_id}' is already in a trade slot.`)
@@ -34,51 +34,44 @@ export function SetItemInTrade(asset_id: string) {
 
     if ($item) {
         const item = $item['rgItem']
-        const is_in_trade_slot = window()['BIsInTradeSlot'](item)
+        const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
 
         if (is_in_trade_slot) {
             throwError(`Item with id '${asset_id}' is already in a trade slot.`)
         } else {
-            window()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
+            getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
         }
     } else {
         throwError(`Item with id '${asset_id}' not found.`)
     }
+}
 
-    /*const your_side = getWindow()['g_rgCurrentTradeStatus']['me']['assets']
-    const their_side = getWindow()['g_rgCurrentTradeStatus']['them']['assets']
+export function SearchItemByName(user: string, item_name_to_search: string) {
+    const is_user_you = user === 'UserYou'
+    const is_user_them = user === 'UserThem'
 
-    const $item = document.querySelector(`#item440_2_${asset_id}`)
+    if (!is_user_you && !is_user_them) {
+        throwError(`Unknown user '${user}'.`)
+    }
 
-    if ($item) {
-        const item = $item['rgItem']
-        const is_their_item = item['is_their_item']
-        const side = (is_their_item ? their_side : your_side)
+    const inventory = getWindow()[user]['getInventory'](440, 2)['rgInventory']
 
-        const is_in_trade = side.find((item) => item['assetid'] === asset_id)
+    for (let asset_id in inventory) {
+        const item = inventory[asset_id]
+        const item_name = item['market_name']
 
-        if (is_in_trade) {
-            throwError(`Item with asset_id '${asset_id}' is already in a trade offer.`)
-        } else {
-            side.push({
-                appid: 440,
-                contextid: '2',
-                amount: 1,
-                assetid: asset_id
-            })
-
-            getWindow()['GTradeStateManager']['m_bChangesMade'] = true
-            getWindow()['g_rgCurrentTradeStatus']['version']++
+        if (item_name === item_name_to_search) {
+            return asset_id
         }
-    } else {
-        throwError(`Item with asset_id '${asset_id}' was not found.`)
-    }*/
+    }
+
+    return undefined
 }
 
 export function removeItemFromTradeOffer(asset_id: string) {}
 
 export function refreshTradeStatus() {
-    window()['RefreshTradeStatus'](window()['g_rgCurrentTradeStatus'])
+    getWindow()['RefreshTradeStatus'](getWindow()['g_rgCurrentTradeStatus'])
 }
 
 export function isTradeOfferUrl(url: string) {

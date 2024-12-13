@@ -1,5 +1,4 @@
-import {getWindow, throwError} from "./Main";
-import {Currencies} from "./Items";
+import {getWindow, throwError} from "../Main";
 
 export function SetItemsInTrade(asset_ids: string[]) {
     const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
@@ -19,7 +18,9 @@ export function SetItemsInTrade(asset_ids: string[]) {
             if (is_in_trade_slot) {
                 throwError(`Item with id '${asset_id}' is already in a trade slot.`)
             } else {
-                CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
+                setTimeout(() => {
+                    CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
+                }, 1)
             }
         } else {
             throwError(`Item with id '${asset_id}' not found.`)
@@ -73,32 +74,4 @@ export function removeItemFromTradeOffer(asset_id: string) {}
 
 export function refreshTradeStatus() {
     getWindow()['RefreshTradeStatus'](getWindow()['g_rgCurrentTradeStatus'])
-}
-
-export function isTradeOfferUrl(url: string) {
-    return /^https:\/\/steamcommunity\.com\/tradeoffer\/new\/\?partner=\d+&token=.+$/.test(url)
-}
-
-//
-export function updateCurrencies(currencies: Currencies) {
-    updateCurrency('key-count', currencies['key'].length)
-    updateCurrency('ref-count', currencies['ref'].length)
-    updateCurrency('rec-count', currencies['rec'].length)
-    updateCurrency('scrap-count', currencies['scrap'].length)
-}
-
-function updateCurrency(item_id: string, count: number) {
-    const item_ids = ['key-count', 'ref-count', 'rec-count', 'scrap-count']
-
-    if (!item_ids.includes(item_id)) {
-        throwError(`Item id '${item_id}' is not valid.`)
-    }
-
-    const item_count = document.querySelector(`#${item_id}`)
-
-    if (item_count) {
-        item_count.textContent = `${count}x`
-    } else {
-        throwError(`Element '${item_id}' was not found.`)
-    }
 }

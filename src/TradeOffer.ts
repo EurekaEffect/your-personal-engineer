@@ -1,4 +1,5 @@
 import {getWindow, throwError} from "./Main";
+import {Currencies} from "./Items";
 
 export function SetItemsInTrade(asset_ids: string[]) {
     const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
@@ -76,4 +77,28 @@ export function refreshTradeStatus() {
 
 export function isTradeOfferUrl(url: string) {
     return /^https:\/\/steamcommunity\.com\/tradeoffer\/new\/\?partner=\d+&token=.+$/.test(url)
+}
+
+//
+export function updateCurrencies(currencies: Currencies) {
+    updateCurrency('key-count', currencies['key'].length)
+    updateCurrency('ref-count', currencies['ref'].length)
+    updateCurrency('rec-count', currencies['rec'].length)
+    updateCurrency('scrap-count', currencies['scrap'].length)
+}
+
+function updateCurrency(item_id: string, count: number) {
+    const item_ids = ['key-count', 'ref-count', 'rec-count', 'scrap-count']
+
+    if (!item_ids.includes(item_id)) {
+        throwError(`Item id '${item_id}' is not valid.`)
+    }
+
+    const item_count = document.querySelector(`#${item_id}`)
+
+    if (item_count) {
+        item_count.textContent = `${count}x`
+    } else {
+        throwError(`Element '${item_id}' was not found.`)
+    }
 }

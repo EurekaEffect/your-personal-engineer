@@ -1,37 +1,67 @@
-### Your Personal Engineer
+# Your Personal Engineer
 
-This is a browser extension that includes automation for tasks previously performed by traders, as well as displays additional information on [backpack.tf](https://backpack.tf) (support for [next.backpack.tf](https://next.backpack.tf) is not planned).
+**YPE** is a browser extension that includes automation for tasks previously performed by traders, as well as displays additional information on [backpack.tf](https://backpack.tf).</br>
+**Note**: support for [next.backpack.tf](https://next.backpack.tf) is not planned.
 
-### How to build
+---
 
-<pre>npm run build</pre>
+### Features
+
+- **Absolutely no, go use other scripts.**
+---
+
+### How to Build
+
+To build the project, run the following command:
+
+`npm run build`
+
+---
+
+### Discord
+
+If you have any questions - [join the discord server](https://discord.gg/pJpyb7M9df) and contact with the owner.
+
+---
 
 ### Disclaimer
 
-WIP! This browser extension is under a maintenance.<br>
-This means that the script is still in development and is not intended for daily use. It lacks most of the functionality and may cause errors.
+**WIP!** This browser extension is under a maintenance.<br>
+It means that the script is still in development and is not intended for daily use. It lacks most of the functionality and may cause errors.
+
+---
 
 ### TODO
 
 - **One-Click Offer**
-    - Add buttons for turning on/off avoidance of the same items and double check
-    - Avoid reusing the same items
-    - Round metal from 0.05 to 0.11
+  - Add toggles to enable/disable avoidance of duplicate items and double-check offers.
+  - Prevent the reuse of the same items in offers.
+  - Round metal values from 0.05 to 0.11.
 
-- **Trade Offer History** - allows you to view your trade offers from all time.
-- **Cost to craft** - shows the fabricator's cost to craft.
-- **Spell icons** - shows the attached spells on the item.
+- **Trade Offer History**  
+  View your trade offer history from all time.
 
---- 
-### Thanks to
-- [Brom127](https://github.com/peleicht), I got inspired by his [One-Click Offer](https://github.com/peleicht/backpack-offer-sender) browser extension.
-- [TamperMonkey](https://www.tampermonkey.net/), I'm using it to run YPE.
+- **Cost to Craft**  
+  Displays the fabricator's cost to craft items.
+
+- **Spell Icons**  
+  Show attached spells on items.
+
+---
+
+### Special Thanks
+
+- **[Brom127](https://github.com/peleicht)** – Inspired me to develop this extension after using his [One-Click Offer](https://github.com/peleicht/backpack-offer-sender) browser extension.
+- **[TamperMonkey](https://www.tampermonkey.net/)** – I'm using TamperMonkey to run **YPE**.
+
 ---
 
 ### Contribution
 
-Please, help me to get rid of my grammar mistakes :(
+I will be grateful for your help, especially that fixes my grammar mistakes.
+
+---
 
 ### License
 
-I'm using MIT, so feel free to use my code but don't sue me.
+This project is licensed under the MIT License. Feel free to use the code, but **please don't sue me**.

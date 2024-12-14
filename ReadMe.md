@@ -7,7 +7,7 @@
 
 ### Features
 
-- **Absolutely no, go use other scripts.**
+- **A menu for quick access to the currencies (Trade Offer).**
 ---
 
 ### How to Build

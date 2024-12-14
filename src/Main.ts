@@ -16,7 +16,7 @@ import {isTradeOfferUrl, main} from "./TradeOffer.page";
 
 // Yeah, it alertinating.
 export function alert(message: string) {
-    window.alert(`Script: Your Personal Engineer\nMessage: ${message}`)
+    window.alert(`Script: Your Personal Engineer\n${message}`)
 }
 
 // Yeah, it logs.

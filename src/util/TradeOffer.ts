@@ -1,13 +1,9 @@
 import {error, getWindow, throwError} from "../Main";
+import {resolve} from "uri-js";
 
 export async function SetItemsInTrade(asset_ids: string[]) {
-    return new Promise<string[]>((resolve) => {
+    return new Promise<string[]>(async (resolve) => {
         const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
-
-        const prev_UpdateTradeStatus = CTradeOfferStateManager['UpdateTradeStatus']
-        // This function slow-downs adding an item to the trade offer,
-        // so we overriding it and setting it back later.
-        CTradeOfferStateManager['UpdateTradeStatus'] = function () {}
 
         for (let asset_id of asset_ids) {
             const $item = document.querySelector(`#item440_2_${asset_id}`)
@@ -20,9 +16,12 @@ export async function SetItemsInTrade(asset_ids: string[]) {
                     alert(`Item with id '${asset_id}' is already in a trade slot.`)
                     error('TradeOffer.SetItemsInTrade', `Item with id '${asset_id}' is already in a trade slot.`)
                 } else {
-                    //setTimeout(() => {
-                        CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
-                    //}, 1)
+                    await new Promise((resolve) => {
+                        setTimeout(() => {
+                            CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
+                            resolve(true)
+                        }, 1)
+                    })
                 }
             } else {
                 alert(`Item with id '${asset_id}' not found.`)
@@ -30,28 +29,38 @@ export async function SetItemsInTrade(asset_ids: string[]) {
             }
         }
 
-        CTradeOfferStateManager['UpdateTradeStatus'] = prev_UpdateTradeStatus
-        CTradeOfferStateManager['UpdateTradeStatus']()
-
         resolve(asset_ids)
     })
 }
 
-export function SetItemInTrade(asset_id: string) {
-    const $item = document.querySelector(`#item440_2_${asset_id}`)
+export async function SetItemInTrade(asset_id: string) {
+    return new Promise(async (resolve) => {
+        const $item = document.querySelector(`#item440_2_${asset_id}`)
 
-    if ($item) {
-        const item = $item['rgItem']
-        const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
+        if ($item) {
+            const item = $item['rgItem']
+            const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
 
-        if (is_in_trade_slot) {
-            throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+            if (is_in_trade_slot) {
+                throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+            } else {
+                getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
+
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
+                        resolve(true)
+                    }, 1)
+                })
+
+                resolve(true)
+            }
         } else {
-            getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
+            throwError(`Item with id '${asset_id}' not found.`)
         }
-    } else {
-        throwError(`Item with id '${asset_id}' not found.`)
-    }
+
+        resolve(false)
+    })
 }
 
 export function SearchItemsByName(user: string, item_name_to_search: string) {

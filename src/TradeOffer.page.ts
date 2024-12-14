@@ -4,6 +4,7 @@ import {SearchItemByName, SetItemInTrade, SetItemsInTrade} from "./util/TradeOff
 const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
     <div class="trade_box_bgheader active"></div>
     <div class="trade_box_contents" style="background: #1D1D1D">
+        <div id="warning-text" class="tutorial_arrow_ctn" style="text-align: center; color: #d83636"></div>
         <div class="tutorial_arrow_ctn" style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-around; align-items: stretch; align-content: stretch;">
             <div style="position: relative; text-align: center; color: white"><img src="https://community.cloudflare.steamstatic.com/economy/image/fWFc82js0fmoRAP-qOIPu5THSWqfSmTELLqcUywGkijVjZULUrsm1j-9xgEAaR4uURrwvz0N252yVaDVWrRTno9m4ccG2GNqxlQoZrC2aG9hcVGUWflbX_drrVu5UGki5sAij6tOtQ/96fx96f"><div id="key-count" style="position: absolute; bottom: 10px; right: 10px">0x</div></div>
             <div style="position: relative; text-align: center; color: white"><img src="https://community.cloudflare.steamstatic.com/economy/image/fWFc82js0fmoRAP-qOIPu5THSWqfSmTELLqcUywGkijVjZULUrsm1j-9xgEbZQsUYhTkhzJWhsO1Mv6NGucF1Ygzt8ZQijJukFMiMrbhYDEwI1yRVKNfD6xorQ3qW3Jr6546DNPuou9IOVK4p4kWJaA/96fx96f"><div id="ref-count" style="position: absolute; bottom: 10px; right: 10px">0x</div></div>
@@ -11,8 +12,8 @@ const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
             <div style="position: relative; text-align: center; color: white"><img src="https://community.cloudflare.steamstatic.com/economy/image/fWFc82js0fmoRAP-qOIPu5THSWqfSmTELLqcUywGkijVjZULUrsm1j-9xgEbZQsUYhTkhzJWhsPZAfOeD-VOn4phtsdQ32ZtxFYoN7PkYmVmIgeaUKNaX_Rjpwy8UHMz6pcxAIfnovUWJ1t9nYFqYw/96fx96f"><div id="scrap-count" style="position: absolute; bottom: 10px; right: 10px">0x</div></div>
         </div>
         <div style="display: flex; flex-direction: row; flex-wrap: nowrap; justify-content: space-around; align-items: stretch; align-content: stretch;" class="tutorial_arrow_ctn">
-            <input id="keys" placeholder="Keys" class="filter_search_box">
-            <input id="metal" placeholder="Metal" class="filter_search_box">
+            <input id="keys" placeholder="Keys" class="filter_search_box" type="number">
+            <input id="metal" placeholder="Metal" class="filter_search_box" type="number">
             <a id="add-currency" class="pagecontrol_element pagebtn">Add</a>
         </div>
     </div>
@@ -204,41 +205,83 @@ class CurrencyPanel {
                     return throwError(`Cannot find 'keys' or 'metal' element.`)
                 }
 
-                const keys = $keys['value'] ? parseInt($keys['value']) : 0;
-                const metal = $metal['value'] ? parseInt($metal['value']) : 0; // TODO: make it float.
+                const keys = $keys['value'] ? parseInt($keys['value']) : 0
+                let metal = $metal['value'] ? parseFloat($metal['value']) : 0
 
                 if (isNaN(keys) || isNaN(metal)) {
-                    alert(`Only numbers are allowed in 'keys' and 'metal' textboxes.`);
-                    return throwError(`Only numbers are allowed in 'keys' and 'metal' textboxes.`);
+                    alert(`Only numbers are allowed in 'keys' and 'metal' textboxes.`)
+                    return throwError(`Only numbers are allowed in 'keys' and 'metal' textboxes.`)
                 }
 
                 if (keys < 0 || metal < 0) {
-                    alert(`Only non-negative numbers are allowed in 'keys' and 'metal' textboxes.`);
-                    return throwError(`Only non-negative numbers are allowed in 'keys' and 'metal' textboxes.`);
+                    alert(`Only non-negative numbers are allowed in 'keys' and 'metal' textboxes.`)
+                    return throwError(`Only non-negative numbers are allowed in 'keys' and 'metal' textboxes.`)
                 }
 
                 const is_user_them = getWindow()['g_ActiveUser'] === getWindow()['UserThem']
                 const current_user = is_user_them ? 'UserThem' : 'UserYou'
 
                 const currencies = this.items.getCurrenciesInInventory(current_user)
+                let half_scrap = Math.round(metal / 0.05555555555555555) // Converting metal to half scrap for easier management.
 
-                const keys_to_add = currencies['key'].slice(0, keys)
-                const metal_to_add = currencies['ref'].slice(0, metal)
+                // Calculatung the refined amount.
+                let ref_amount = Math.floor(half_scrap / 18)
+                ref_amount = Math.min(currencies['ref'].length, ref_amount)
+                half_scrap = half_scrap - (ref_amount * 18)
+
+                // Calculatung the reclaimed amount.
+                let rec_amount = Math.floor(half_scrap / 6)
+                rec_amount = Math.min(currencies['rec'].length, rec_amount)
+                half_scrap = half_scrap - (rec_amount * 6)
+
+                // Calculatung the scrap amount.
+                let scrap_amount = Math.floor(half_scrap / 2)
+                scrap_amount = Math.min(currencies['scrap'].length, scrap_amount)
+                half_scrap = half_scrap - (scrap_amount * 2)
+
+                const missing_keys = keys > currencies['key'].length
+                const missing_metal = half_scrap > 0
+
+                if (missing_keys || missing_metal) {
+                    const missing_keys = keys - currencies['key'].length
+                    const missing_metal = Math.floor((half_scrap / 18) * 100) / 100
+
+                    // Showing a warning.
+                    if (missing_keys && missing_metal) {
+                        this.showWarning(`You are missing ${missing_keys} keys ${missing_metal} metal.`)
+                    } else if (missing_keys) {
+                        this.showWarning(`You are missing ${missing_keys} keys.`)
+                    } else {
+                        this.showWarning(`You are missing ${missing_metal} metal.`)
+                    }
+                } else {
+                    this.hideWarning()
+                }
 
                 const asset_ids_to_add = [
-                    ...keys_to_add.map((item) => item['id']),
-                    ...metal_to_add.map((item) => item['id'])
+                    ...currencies['key'].slice(0, keys).map((item) => item['id']),
+                    ...currencies['ref'].slice(0, ref_amount).map((item) => item['id']),
+                    ...currencies['rec'].slice(0, rec_amount).map((item) => item['id']),
+                    ...currencies['scrap'].slice(0, scrap_amount).map((item) => item['id'])
                 ]
 
-                SetItemsInTrade(asset_ids_to_add)
-
-                // This shouldn't be here, but I need this.
-                this.updateCurrencies(current_user)
+                SetItemsInTrade(asset_ids_to_add) // Adding items to the trade offer.
+                this.updateCurrencies(current_user) // Have to update it manually.
             })
     }
 
     get() {
         return document.querySelector('#currency-panel')
+    }
+
+    showWarning(message: string) {
+        const $warning_text = document.querySelector('#warning-text')
+        $warning_text!.textContent = message
+    }
+
+    hideWarning() {
+        const $warning_text = document.querySelector('#warning-text')
+        $warning_text!.textContent = ''
     }
 
     updateCurrencies(user: string) {
@@ -260,6 +303,9 @@ class CurrencyPanel {
         const item_count = document.querySelector(`#${item_id}`)
 
         if (item_count) {
+            const parent_node = item_count.parentNode
+            parent_node!['style']['opacity'] = (count > 0) ? '100%' : '40%'
+
             item_count.textContent = `${count}x`
         } else {
             throwError(`Element '${item_id}' was not found.`)

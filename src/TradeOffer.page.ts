@@ -1,5 +1,5 @@
 import {alert, error, getWindow, log, throwError} from "./Main";
-import {SearchItemByName, SetItemInTrade, SetItemsInTrade} from "./util/TradeOffer";
+import {SearchItemsByName, SetItemInTrade, SetItemsInTrade} from "./util/TradeOffer";
 
 const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
     <div class="trade_box_bgheader active"></div>
@@ -19,6 +19,9 @@ const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
     </div>
 </div>`
 
+let is_your_inventory_loaded = false
+let is_their_inventory_loaded = false
+
 export function isTradeOfferUrl(url: string) {
     return /^https:\/\/steamcommunity\.com\/tradeoffer\/new\/\?partner=\d+&token=.+$/.test(url)
 }
@@ -34,37 +37,111 @@ export async function main() {
     loadInventory('UserThem')
 
     // Events.
-    window.addEventListener('inventory_load_complete', (event) => {
+    window.addEventListener('inventory_load_complete', async (event) => {
         const user = event['detail']['user']
         const is_user_you = user === 'UserYou'
         const is_user_them = user === 'UserThem'
         const inventory = event['detail']['inventory']['rgInventory']
 
         const params = new URLSearchParams(location.search)
-        const asset_id = params.get('ype.asset_id') // ID of the item.
-        const item_name = params.get('ype.item_name') // In case when the item is sold but the item is liquid like a key.
-        const price = params.get('ype.price')
-        const currencies = price ? JSON.parse(price) : { keys: 0, metal: 0 }
+        const ype = params.get('ype')
+        const json = ype ? JSON.parse(ype) : {}
+
+        const {
+            asset_id,
+            item_name,
+            amount,
+            currencies
+        } = json
 
         log('Main.inventory_load_complete', `${user} inventory was loaded.`)
 
         if (is_user_you) {
+            is_your_inventory_loaded = true
+
             // Initial load.
             currency_panel.updateCurrencies(user)
 
-            if (price) {
-                const $keys = document.querySelector('#keys')
-                const $metal = document.querySelector('#metal')
-                const $add_currency = document.querySelector('#add-currency')
+            if (currencies) {
+                if (is_their_inventory_loaded) {
+                    const their_items = getWindow()['g_rgCurrentTradeStatus']['them']['assets']
+                    const items_in_trade = their_items.length
 
-                $keys!['value'] = currencies['keys']
-                $metal!['value'] = currencies['metal']
-                $add_currency!['click']()
+                    if (items_in_trade > 0) {
+                        const $keys = document.querySelector('#keys')
+                        const $metal = document.querySelector('#metal')
+                        const $add_currency = document.querySelector('#add-currency')
+
+                        let half_scrap = Math.round(currencies['metal'] / 0.05555555555555555) // Converting metal to half scrap for easier management.
+                        half_scrap = (half_scrap * items_in_trade)
+                        let metal = Math.floor((half_scrap / 18) * 100) / 100
+
+                        $keys!['value'] = (currencies['keys'] * items_in_trade)
+                        $metal!['value'] = metal
+                        $add_currency!['click']()
+                    }
+                } else {
+                    // Then our inventory loaded faster than their.
+                }
             }
         }
 
         if (is_user_them) {
+            is_their_inventory_loaded = true
+            let asset_id_item_found: boolean
+
             if (asset_id) {
+                // Adding the item by asset id.
+                log('Main.inventory_load_complete', `Adding the item with id '${asset_id}' to the trade offer.`)
+
+                try {
+                    SetItemInTrade(asset_id)
+                    asset_id_item_found = true
+                    log('Main.inventory_load_complete', `Item with id '${asset_id}' was added.`)
+                } catch (fail) {
+                    asset_id_item_found = false
+                    log('Main.inventory_load_complete', `Item with id '${asset_id}' is not found.`)
+                }
+            } else {
+                // 'asset_id' is not present, so skipping this part.
+                asset_id_item_found = false
+                log('Main.inventory_load_complete', `'asset_id' is not present.`)
+            }
+
+            let amount_to_add = amount ? amount : 1
+            amount_to_add = asset_id_item_found ? amount_to_add - 1 : amount_to_add // Decreasing by one, because the asset id item was already added.
+
+            if (item_name && amount_to_add > 0) {
+                log('Main.inventory_load_complete', `'item_name' is present and the amount to add is '${amount_to_add}'.`)
+
+                let exact_items_by_name = SearchItemsByName(user, item_name)
+                exact_items_by_name = exact_items_by_name.slice(0, amount_to_add)
+
+                await SetItemsInTrade(exact_items_by_name)
+            }
+
+            if (is_your_inventory_loaded) {
+                const their_items = getWindow()['g_rgCurrentTradeStatus']['them']['assets']
+                const items_in_trade = their_items.length
+
+                if (items_in_trade !== amount) {
+                    currency_panel.showWarning(`Found only ${items_in_trade} instances of item instead of ${amount}.`)
+                }
+
+                const $keys = document.querySelector('#keys')
+                const $metal = document.querySelector('#metal')
+                const $add_currency = document.querySelector('#add-currency')
+
+                let half_scrap = Math.round(currencies['metal'] / 0.05555555555555555) // Converting metal to half scrap for easier management.
+                half_scrap = (half_scrap * items_in_trade)
+                let metal = Math.floor((half_scrap / 18) * 100) / 100
+
+                $keys!['value'] = (currencies['keys'] * items_in_trade)
+                $metal!['value'] = metal
+                $add_currency!['click']()
+            }
+
+            /*if (asset_id) {
                 try {
                     log('Main.inventory_load_complete', `Adding an item with id '${asset_id}' to the trade offer.`)
                     SetItemInTrade(asset_id)
@@ -74,11 +151,14 @@ export async function main() {
 
                     if (item_name) {
                         log('Main.inventory_load_complete', `Searching for '${item_name}' instead.`)
-                        const second_asset_id = SearchItemByName(user, item_name)
+                        let exact_items_by_name = SearchItemsByName(user, item_name)
+                        exact_items_by_name = exact_items_by_name.slice(0, (amount ? amount : 1))
 
-                        if (second_asset_id) {
-                            log('Main.inventory_load_complete', `Found an item with the exact name, it's id is '${second_asset_id}', adding to the trade offer.`)
-                            SetItemInTrade(second_asset_id)
+                        if (exact_items_by_name) {
+                            log('Main.inventory_load_complete', `Found an item with the exact name, it's id is '${exact_items_by_name}', adding to the trade offer.`)
+                            SetItemsInTrade(exact_items_by_name)
+
+                            alert(`Adding the item by name, because item with id '${asset_id}' is missing.\n\nDON'T FORGET TO DOUBLE CHECK!`)
                         } else {
                             const error_message = `Cannot find an item with id '${asset_id}' nor with item '${item_name}'.`
 
@@ -92,7 +172,7 @@ export async function main() {
                         throwError(error_message)
                     }
                 }
-            }
+            }*/
         }
     })
 

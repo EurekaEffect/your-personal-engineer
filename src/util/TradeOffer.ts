@@ -1,34 +1,40 @@
-import {getWindow, throwError} from "../Main";
+import {error, getWindow, throwError} from "../Main";
 
-export function SetItemsInTrade(asset_ids: string[]) {
-    const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
+export async function SetItemsInTrade(asset_ids: string[]) {
+    return new Promise<string[]>((resolve) => {
+        const CTradeOfferStateManager = getWindow()['CTradeOfferStateManager']
 
-    const prev_UpdateTradeStatus = CTradeOfferStateManager['UpdateTradeStatus']
-    // This function slow-downs adding an item to the trade offer,
-    // so we overriding it and setting it back later.
-    CTradeOfferStateManager['UpdateTradeStatus'] = function () {}
+        const prev_UpdateTradeStatus = CTradeOfferStateManager['UpdateTradeStatus']
+        // This function slow-downs adding an item to the trade offer,
+        // so we overriding it and setting it back later.
+        CTradeOfferStateManager['UpdateTradeStatus'] = function () {}
 
-    for (let asset_id of asset_ids) {
-        const $item = document.querySelector(`#item440_2_${asset_id}`)
+        for (let asset_id of asset_ids) {
+            const $item = document.querySelector(`#item440_2_${asset_id}`)
 
-        if ($item) {
-            const item = $item['rgItem']
-            const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
+            if ($item) {
+                const item = $item['rgItem']
+                const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
 
-            if (is_in_trade_slot) {
-                throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+                if (is_in_trade_slot) {
+                    alert(`Item with id '${asset_id}' is already in a trade slot.`)
+                    error('TradeOffer.SetItemsInTrade', `Item with id '${asset_id}' is already in a trade slot.`)
+                } else {
+                    //setTimeout(() => {
+                        CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
+                    //}, 1)
+                }
             } else {
-                setTimeout(() => {
-                    CTradeOfferStateManager['SetItemInTrade'](item, 0, 1)
-                }, 1)
+                alert(`Item with id '${asset_id}' not found.`)
+                error('TradeOffer.SetItemsInTrade', `Item with id '${asset_id}' not found.`)
             }
-        } else {
-            throwError(`Item with id '${asset_id}' not found.`)
         }
-    }
 
-    CTradeOfferStateManager['UpdateTradeStatus'] = prev_UpdateTradeStatus
-    CTradeOfferStateManager['UpdateTradeStatus']()
+        CTradeOfferStateManager['UpdateTradeStatus'] = prev_UpdateTradeStatus
+        CTradeOfferStateManager['UpdateTradeStatus']()
+
+        resolve(asset_ids)
+    })
 }
 
 export function SetItemInTrade(asset_id: string) {
@@ -48,7 +54,7 @@ export function SetItemInTrade(asset_id: string) {
     }
 }
 
-export function SearchItemByName(user: string, item_name_to_search: string) {
+export function SearchItemsByName(user: string, item_name_to_search: string) {
     const is_user_you = user === 'UserYou'
     const is_user_them = user === 'UserThem'
 
@@ -57,17 +63,21 @@ export function SearchItemByName(user: string, item_name_to_search: string) {
     }
 
     const inventory = getWindow()[user]['getInventory'](440, 2)['rgInventory']
+    const asset_ids: any = []
 
     for (let asset_id in inventory) {
-        const item = inventory[asset_id]
+        const item = inventory[asset_id] // rgItem
         const item_name = item['market_name']
 
+        const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
+        if (is_in_trade_slot) continue
+
         if (item_name === item_name_to_search) {
-            return asset_id
+            asset_ids.push(asset_id)
         }
     }
 
-    return undefined
+    return asset_ids
 }
 
 export function removeItemFromTradeOffer(asset_id: string) {}

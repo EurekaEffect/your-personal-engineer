@@ -43,12 +43,24 @@ export async function main() {
         const params = new URLSearchParams(location.search)
         const asset_id = params.get('ype.asset_id') // ID of the item.
         const item_name = params.get('ype.item_name') // In case when the item is sold but the item is liquid like a key.
+        const price = params.get('ype.price')
+        const currencies = price ? JSON.parse(price) : { keys: 0, metal: 0 }
 
         log('Main.inventory_load_complete', `${user} inventory was loaded.`)
 
         if (is_user_you) {
             // Initial load.
             currency_panel.updateCurrencies(user)
+
+            if (price) {
+                const $keys = document.querySelector('#keys')
+                const $metal = document.querySelector('#metal')
+                const $add_currency = document.querySelector('#add-currency')
+
+                $keys!['value'] = currencies['keys']
+                $metal!['value'] = currencies['metal']
+                $add_currency!['click']()
+            }
         }
 
         if (is_user_them) {
@@ -256,17 +268,17 @@ class CurrencyPanel {
                     }
                 } else {
                     this.hideWarning()
+
+                    const asset_ids_to_add = [
+                        ...currencies['key'].slice(0, keys).map((item) => item['id']),
+                        ...currencies['ref'].slice(0, ref_amount).map((item) => item['id']),
+                        ...currencies['rec'].slice(0, rec_amount).map((item) => item['id']),
+                        ...currencies['scrap'].slice(0, scrap_amount).map((item) => item['id'])
+                    ]
+
+                    SetItemsInTrade(asset_ids_to_add) // Adding items to the trade offer.
+                    this.updateCurrencies(current_user) // Have to update it manually.
                 }
-
-                const asset_ids_to_add = [
-                    ...currencies['key'].slice(0, keys).map((item) => item['id']),
-                    ...currencies['ref'].slice(0, ref_amount).map((item) => item['id']),
-                    ...currencies['rec'].slice(0, rec_amount).map((item) => item['id']),
-                    ...currencies['scrap'].slice(0, scrap_amount).map((item) => item['id'])
-                ]
-
-                SetItemsInTrade(asset_ids_to_add) // Adding items to the trade offer.
-                this.updateCurrencies(current_user) // Have to update it manually.
             })
     }
 

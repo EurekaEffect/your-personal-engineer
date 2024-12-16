@@ -39,9 +39,9 @@ const STYLE = `<style>
             margin: -5px
         }
     </style>`
+
 const TRADE_BUTTON =
-    `<a class="btn btn-bottom btn-xs btn-success hover-able" style="background-color: rgb(185, 143, 200); border-color: rgb(185, 143, 200)" ype.asset_id="" ype.item_name="" ype.amount="1" ype.currencies="">
-        <i class="fa fa-fire"></i>
+    `<a class="btn btn-bottom btn-xs btn-success hover-able" style="background-color: rgb(185, 143, 200); border-color: rgb(185, 143, 200)" ype.amount="1">
         <div class="popup-panel" onclick="event.stopPropagation()">
             <input type="range" value="1" min="1" max="50" oninput="this.nextElementSibling.value = this.value; this.parentNode.parentNode.setAttribute('ype.amount', parseInt(this.value))" draggable="false">
             <output>1</output>
@@ -59,35 +59,60 @@ export async function mainClassifieds() {
 
     const listings = document.querySelectorAll('.listing')
 
-    listings.forEach((listing) => {
-        const $item = listing.querySelector('.item')
-        const $buttons = listing.querySelector('.listing-buttons')
+    // @ts-ignore, I hate this.
+    for (const $listing of listings) {
+        const $item = $listing.querySelector('.item')
+        const $buttons = $listing.querySelector('.listing-buttons')
 
-        const asset_id = $item!.getAttribute('data-id')
-        const item_name = $item!.getAttribute('title')
-        const price = $item!.getAttribute('data-listing_price')
+        let price = $item!.getAttribute('data-listing_price')
+        if (!price) continue // Marketplace.tf listings.
 
-        const trade_offer_url = getTradeOfferUrl()
+        let trade_offer_url = getTradeOfferUrl()
 
         if (trade_offer_url) {
-            $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON)
+            $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON) // Adding the trade button to the listing.
 
-            const trade_button = listing.querySelector('.btn.btn-bottom.btn-xs.btn-success.hover-able')
+            // Searching the previously added trade button to set up 'onclick' event in it.
+            const trade_button = $listing.querySelector('.btn.btn-bottom.btn-xs.btn-success.hover-able')
+
+            // Searching for the icon.
+            let $icon = $listing.querySelector('.fa.fa-sw.fa-flash')
+            if (!$icon) {
+                // Creating our own icon.
+                $icon = document.createElement('i')
+                $icon.classList.add('fa', 'fa-sw', 'fa-exchange')
+            } else {
+                $icon = $icon.cloneNode(true) // Cloning to make a different node.
+            }
+
+            trade_button!.prepend($icon) // Adding the icon to the trade button.
 
             trade_button!.addEventListener('click', () => {
+                let asset_id = $item!.getAttribute('data-id')
+                let item_name = $item!.getAttribute('title')
+                let intent = $item!.getAttribute('data-listing_intent')
+                let amount = trade_button!.getAttribute('ype.amount')
+                let price = $item!.getAttribute('data-listing_price')
+
+                const currencies = convertPriceToCurrencies(price)
+
+                // Creating a config based on listing's attributes.
                 const ype = {
-                    asset_id: asset_id,
+                    asset_id: (!asset_id || asset_id.length === 0) ? undefined : asset_id,
                     item_name: item_name,
-                    amount: trade_button!.getAttribute('ype.amount'),
-                    currencies: parsePriceStr(price ? price : '0 key, 0 ref')
+                    intent: intent,
+                    amount: amount,
+                    currencies: currencies
                 }
 
-                open(`${trade_offer_url}&ype=${JSON.stringify(ype)}`, '_blank')
+                // Opening a new window with trade offer page.
+                trade_offer_url = `${trade_offer_url}&ype=${JSON.stringify(ype)}`
+                open(trade_offer_url, '_blank')
             })
         }
 
         function getTradeOfferUrl() {
-            const user_link = listing.querySelector('.user-link')
+            const user_link = $listing.querySelector('.user-link')
             const offer_params = user_link!.getAttribute('data-offers-params')
 
             if (offer_params) {
@@ -97,22 +122,17 @@ export async function mainClassifieds() {
             }
         }
 
-        function parsePriceStr(price_str: string) {
+        function convertPriceToCurrencies(price_str: string) {
             const regex = /\b(\d+(\.\d+)?)\s(key|keys|ref|refs)\b/g
 
             function convertMatchesToJSON(match: any[]) {
-                const result = {};
+                const result = {}
 
                 const number = match[1]
                 let term = match[3]
 
-                if (term === "key" || term === "keys") {
-                    term = "keys"
-                }
-
-                if (term === "ref" || term === "refs") {
-                    term = "metal"
-                }
+                if (term === "key" || term === "keys") term = "keys"
+                if (term === "ref" || term === "refs") term = "metal"
 
                 result[term] = parseFloat(number)
                 return result
@@ -122,12 +142,12 @@ export async function mainClassifieds() {
             let match: RegExpExecArray | null
 
             while ((match = regex.exec(price_str)) !== null) {
-                const jsonObj = convertMatchesToJSON(match)
+                const json = convertMatchesToJSON(match)
 
-                Object.assign(results, jsonObj)
+                Object.assign(results, json)
             }
 
             return results
         }
-    })
+    }
 }

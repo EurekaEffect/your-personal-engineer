@@ -41,14 +41,6 @@ export async function mainTradeOffer() {
         const user = event['detail']['user']
         const is_user_you = user === 'UserYou'
         const is_user_them = user === 'UserThem'
-        const inventory = event['detail']['inventory']['rgInventory']
-
-        const params = new URLSearchParams(location.search)
-        const ype = params.get('ype')
-        const json = ype ? JSON.parse(ype) : {}
-
-        const { asset_id, item_name, currencies } = json
-        let amount = json['amount'] ? json['amount'] : 1
 
         log('Main.inventory_load_complete', `${user} inventory was loaded.`)
 
@@ -60,45 +52,68 @@ export async function mainTradeOffer() {
 
         // Handling 'UserThem' inventory.
         if (is_user_them) {
-            is_their_inventory_loaded = true
-            let asset_id_item_found: boolean
+            is_their_inventory_loaded = true // Marking as loaded.
+        }
 
-            if (!asset_id) {
-                log('Main.inventory_load_complete', `'asset_id' parameter not present.`)
+        if (is_your_inventory_loaded && is_their_inventory_loaded) {
+            // Dispatching the 'both_inventories_loaded' event.
+            const event = new CustomEvent('both_inventories_loaded')
+            window.dispatchEvent(event)
+        }
+    })
+
+    window.addEventListener('both_inventories_loaded', async () => {
+        const params = new URLSearchParams(location.search)
+        const ype = params.get('ype')
+        const json = ype ? JSON.parse(ype) : {}
+
+        let {
+            asset_id,
+            item_name,
+            intent,
+            amount,
+            currencies
+        } = json
+
+        // TODO: redo, make a plan how to make it better.
+
+        let asset_id_item_found: boolean
+
+        if (!asset_id) {
+            log('Main.inventory_load_complete', `'asset_id' parameter not present.`)
+            asset_id_item_found = false
+        } else {
+            log('Main.inventory_load_complete', `Searching for the item(${asset_id}).`)
+
+            try {
+                await SetItemInTrade(asset_id) // If item with asset_id cannot be found, then SetItemInTrade will throw an error.
+
+                log('Main.inventory_load_complete', `Item(${asset_id}) was found and added.`)
+                asset_id_item_found = true
+            } catch (fail) {
+                log('Main.inventory_load_complete', `Item(${asset_id}) not found.`)
                 asset_id_item_found = false
-            } else {
-                log('Main.inventory_load_complete', `Searching for the item(${asset_id}).`)
-
-                try {
-                    await SetItemInTrade(asset_id) // If item with asset_id cannot be found, then SetItemInTrade will throw an error.
-
-                    log('Main.inventory_load_complete', `Item(${asset_id}) was found and added.`)
-                    asset_id_item_found = true
-                } catch (fail) {
-                    log('Main.inventory_load_complete', `Item(${asset_id}) not found.`)
-                    asset_id_item_found = false
-                }
             }
+        }
 
-            // Decreasing by one if the item with 'asset_id' was already added.
-            let amount_to_add = asset_id_item_found ? (amount - 1) : amount
+        // Decreasing by one if the item with 'asset_id' was already added.
+        let amount_to_add = asset_id_item_found ? (amount - 1) : amount
 
-            // If the 'item_name' is present and 'amount_to_add' is higher than 0,
-            // then searching for the items with exact name and adding the needed amount to the trade.
+        // If the 'item_name' is present and 'amount_to_add' is higher than 0,
+        // then searching for the items with exact name and adding the needed amount to the trade.
 
-            if (!item_name) {
-                log('Main.inventory_load_complete', `'item_name' parameter not present.`)
+        if (!item_name) {
+            log('Main.inventory_load_complete', `'item_name' parameter not present.`)
+        } else {
+            if (amount_to_add <= 0) {
+                log('Main.inventory_load_complete', `The amount_to_add is 0.`)
             } else {
-                if (amount_to_add <= 0) {
-                    log('Main.inventory_load_complete', `The amount_to_add is 0.`)
-                } else {
-                    log('Main.inventory_load_complete', `Searching for '${amount_to_add}' items with name '${item_name}'.`)
+                log('Main.inventory_load_complete', `Searching for '${amount_to_add}' items with name '${item_name}'.`)
 
-                    let exact_items_by_name = SearchItemsByName(user, item_name)
-                    exact_items_by_name = exact_items_by_name.slice(0, amount_to_add)
+                let exact_items_by_name = SearchItemsByName('UserThem', item_name)
+                exact_items_by_name = exact_items_by_name.slice(0, amount_to_add)
 
-                    await SetItemsInTrade(exact_items_by_name)
-                }
+                await SetItemsInTrade(exact_items_by_name)
             }
         }
 
@@ -106,33 +121,31 @@ export async function mainTradeOffer() {
             return error('Main.inventory_load_complete', `'currency' parameter not present.`)
         }
 
-        if (is_your_inventory_loaded && is_their_inventory_loaded) {
-            // Getting the amount of their items that was added by the script,
-            // then multiplying the currencies by the item amount to get the final price.
-            const amount_of_their_items = getWindow()['g_rgCurrentTradeStatus']['them']['assets'].length
+        // Getting the amount of their items that was added by the script,
+        // then multiplying the currencies by the item amount to get the final price.
+        const amount_of_their_items = getWindow()['g_rgCurrentTradeStatus']['them']['assets'].length
 
-            // Checking if the item amount is higher than 0, otherwice tell the user about it.
-            if (amount_of_their_items > 0) {
-                let keys = currencies['keys']
-                let metal = currencies['metal']
+        // Checking if the item amount is higher than 0, otherwice tell the user about it.
+        if (amount_of_their_items > 0) {
+            let keys = currencies['keys']
+            let metal = currencies['metal']
 
-                let half_scrap = Math.round(metal / 0.05555555555555555) // Converting metal to half scrap for easier management.
-                half_scrap = (half_scrap * amount_of_their_items)
+            let half_scrap = Math.round(metal / 0.05555555555555555) // Converting metal to half scrap for easier management.
+            half_scrap = (half_scrap * amount_of_their_items)
 
-                keys = keys * amount_of_their_items
-                metal = Math.floor((half_scrap / 18) * 100) / 100 // Converting half scrap to metal and rounding from 0.33333333333 to 0.33.
+            keys = keys * amount_of_their_items
+            metal = Math.floor((half_scrap / 18) * 100) / 100 // Converting half scrap to metal and rounding from 0.33333333333 to 0.33.
 
-                // Updating the panel and clicking on the #add-currency button to add currency.
-                currency_panel.updateCurrencyPanelInfoAndClick(keys, metal)
+            // Updating the panel and clicking on the #add-currency button to add currency.
+            currency_panel.updateCurrencyPanelInfoAndClick(keys, metal)
 
-                // Checking if the amount of their items equals the needed amount,
-                // and letting the user know if its not equal.
-                if (String(amount_of_their_items) !== String(amount)) {
-                    alert(`I found only '${amount_of_their_items}' items in your partner's inventory instead of the expected '${amount}'.`)
-                }
-            } else {
-                alert(`Your partner's side doesn't have any items.`)
+            // Checking if the amount of their items equals the needed amount,
+            // and letting the user know if its not equal.
+            if (String(amount_of_their_items) !== String(amount)) {
+                alert(`I found only '${amount_of_their_items}' items in your partner's inventory instead of the expected '${amount}'.`)
             }
+        } else {
+            alert(`Your partner's side doesn't have any items.`)
         }
     })
 

@@ -25,14 +25,6 @@ const STYLE = `<style>
             padding:5px 5px;
             border-radius: 5px;
         }
-
-        .hover-able:hover .popup-panel {
-            display: block;
-        }
-
-        .popup-panel:hover {
-            display:block;
-        }
         
         output {
             color: white; 
@@ -67,13 +59,27 @@ export async function mainClassifieds() {
         let price = $item!.getAttribute('data-listing_price')
         if (!price) continue // Marketplace.tf listings.
 
+        let intent = $item!.getAttribute('data-listing_intent')
+        if (intent === 'buy') continue // Ignore buy orders because they are treating like sell orders (fix).
+
         let trade_offer_url = getTradeOfferUrl()
 
         if (trade_offer_url) {
             $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON) // Adding the trade button to the listing.
 
             // Searching the previously added trade button to set up 'onclick' event in it.
-            const trade_button = $listing.querySelector('.btn.btn-bottom.btn-xs.btn-success.hover-able')
+            const $trade_button = $listing.querySelector('.btn.btn-bottom.btn-xs.btn-success.hover-able')
+            const $popup_panel = $trade_button.querySelector('.popup-panel')
+
+            // FIXME TEMPORARY FIX
+            $trade_button!.addEventListener('mouseenter', () => {
+                $popup_panel!.style.display = 'block'
+            })
+
+            $popup_panel!.addEventListener('mouseleave', () => {
+                $popup_panel!.style.display = 'none'
+            })
+            // FIXME TEMPORARY FIX
 
             // Searching for the icon.
             let $icon = $listing.querySelector('.fa.fa-sw.fa-flash')
@@ -85,13 +91,13 @@ export async function mainClassifieds() {
                 $icon = $icon.cloneNode(true) // Cloning to make a different node.
             }
 
-            trade_button!.prepend($icon) // Adding the icon to the trade button.
+            $trade_button!.prepend($icon) // Adding the icon to the trade button.
 
-            trade_button!.addEventListener('click', () => {
+            $trade_button!.addEventListener('click', () => {
                 let asset_id = $item!.getAttribute('data-id')
                 let item_name = $item!.getAttribute('title')
                 let intent = $item!.getAttribute('data-listing_intent')
-                let amount = trade_button!.getAttribute('ype.amount')
+                let amount = $trade_button!.getAttribute('ype.amount')
                 let price = $item!.getAttribute('data-listing_price')
 
                 const currencies = convertPriceToCurrencies(price)

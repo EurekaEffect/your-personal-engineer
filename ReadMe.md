@@ -11,6 +11,12 @@
 - **A menu for quick access to the currencies (Trade Offer).**
 ---
 
+### How to Install
+
+- Install [Tampermonkey](https://www.tampermonkey.net/)
+- Install [YPE](https://github.com/EurekaEffect/your-personal-engineer/raw/refs/heads/master/output/ype.bundle.user.js)
+---
+
 ### How to Build
 
 To build the project, run the following command:

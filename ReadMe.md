@@ -7,7 +7,14 @@
 
 ### Features
 
+- **Ability to select the item amount that you want to trade (backpack.tf).**
 - **A menu for quick access to the currencies (Trade Offer).**
+---
+
+### How to Install
+
+- Install [Tampermonkey](https://www.tampermonkey.net/)
+- Install [YPE](https://github.com/EurekaEffect/your-personal-engineer/raw/refs/heads/master/output/ype.bundle.user.js)
 ---
 
 ### How to Build
@@ -20,7 +27,7 @@ To build the project, run the following command:
 
 ### Discord
 
-If you have any questions - [join the discord server](https://discord.gg/pJpyb7M9df) and contact with the owner.
+If you have any questions - [join the discord server](https://discord.gg/zRh8C9NuBR) and contact with the owner.
 
 ---
 

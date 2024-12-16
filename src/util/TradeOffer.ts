@@ -34,7 +34,7 @@ export async function SetItemsInTrade(asset_ids: string[]) {
 }
 
 export async function SetItemInTrade(asset_id: string) {
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
         const $item = document.querySelector(`#item440_2_${asset_id}`)
 
         if ($item) {
@@ -42,7 +42,7 @@ export async function SetItemInTrade(asset_id: string) {
             const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
 
             if (is_in_trade_slot) {
-                throwError(`Item with id '${asset_id}' is already in a trade slot.`)
+                reject(`Item with id '${asset_id}' is already in a trade slot.`)
             } else {
                 getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
 
@@ -56,7 +56,7 @@ export async function SetItemInTrade(asset_id: string) {
                 resolve(true)
             }
         } else {
-            throwError(`Item with id '${asset_id}' not found.`)
+            reject(`Item with id '${asset_id}' not found.`)
         }
 
         resolve(false)

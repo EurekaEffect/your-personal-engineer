@@ -3,14 +3,18 @@
 // I will use it because I don't know how to divide a one single JS file into multiple files and make it work in TamperMonkey.
 // BTW even if I knew I'd use TS since it's way cooler than JS :sunglasses:.
 
-import {isTradeOfferUrl, main} from "./TradeOffer.page";
+import {isTradeOfferUrl, mainTradeOffer} from "./TradeOffer.page";
+import {isClassifiedsUrl, mainClassifieds} from "./Classifieds.page";
 
 // Main code.
 (async function () {
     const is_trade_offer_page = isTradeOfferUrl(location.href)
+    const is_classifieds_page = isClassifiedsUrl(location.href)
 
     if (is_trade_offer_page) {
-        await main()
+        await mainTradeOffer()
+    } else if (is_classifieds_page) {
+        await mainClassifieds()
     }
 })()
 

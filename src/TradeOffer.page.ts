@@ -26,7 +26,7 @@ export function isTradeOfferUrl(url: string) {
     return /^https:\/\/steamcommunity\.com\/tradeoffer\/new\/\?partner=\d+&token=.+$/.test(url)
 }
 
-export async function main() {
+export async function mainTradeOffer() {
     const currency_panel = new CurrencyPanel()
 
     // Listening for the item interactions.
@@ -127,7 +127,7 @@ export async function main() {
 
                 // Checking if the amount of their items equals the needed amount,
                 // and letting the user know if its not equal.
-                if (amount_of_their_items !== amount) {
+                if (String(amount_of_their_items) !== String(amount)) {
                     alert(`I found only '${amount_of_their_items}' items in your partner's inventory instead of the expected '${amount}'.`)
                 }
             } else {

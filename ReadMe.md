@@ -27,7 +27,7 @@ To build the project, run the following command:
 
 ### Discord
 
-If you have any questions - [join the discord server](https://discord.gg/pJpyb7M9df) and contact with the owner.
+If you have any questions - [join the discord server](https://discord.gg/zRh8C9NuBR) and contact with the owner.
 
 ---
 

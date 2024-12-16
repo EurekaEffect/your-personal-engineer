@@ -7,6 +7,7 @@
 
 ### Features
 
+- **Ability to select the item amount that you want to trade (backpack.tf).**
 - **A menu for quick access to the currencies (Trade Offer).**
 ---
 

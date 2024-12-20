@@ -63,7 +63,7 @@ export async function SetItemInTrade(asset_id: string) {
     })
 }
 
-export function SearchItemsByName(user: string, item_name_to_search: string) {
+export function getRgItemsByName(user: string, item_name_to_search: string): any[] {
     const is_user_you = user === 'UserYou'
     const is_user_them = user === 'UserThem'
 
@@ -72,7 +72,7 @@ export function SearchItemsByName(user: string, item_name_to_search: string) {
     }
 
     const inventory = getWindow()[user]['getInventory'](440, 2)['rgInventory']
-    const asset_ids: any = []
+    const asset_ids: any[] = []
 
     for (let asset_id in inventory) {
         const item = inventory[asset_id] // rgItem
@@ -82,11 +82,35 @@ export function SearchItemsByName(user: string, item_name_to_search: string) {
         if (is_in_trade_slot) continue
 
         if (item_name === item_name_to_search) {
-            asset_ids.push(asset_id)
+            asset_ids.push(item)
         }
     }
 
     return asset_ids
+}
+
+export function getRgItemByAssetId(user: string, asset_id_to_search: string) {
+    const is_user_you = user === 'UserYou'
+    const is_user_them = user === 'UserThem'
+
+    if (!is_user_you && !is_user_them) {
+        throwError(`Unknown user '${user}'.`)
+    }
+
+    const inventory = getWindow()[user]['getInventory'](440, 2)['rgInventory']
+
+    for (let asset_id in inventory) {
+        const item = inventory[asset_id] // rgItem
+
+        const is_in_trade_slot = getWindow()['BIsInTradeSlot'](item)
+        if (is_in_trade_slot) continue
+
+        if (asset_id === asset_id_to_search) {
+            return item
+        }
+    }
+
+    return undefined
 }
 
 export function removeItemFromTradeOffer(asset_id: string) {}

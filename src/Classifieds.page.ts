@@ -62,7 +62,7 @@ export async function mainClassifieds() {
         let intent = $item!.getAttribute('data-listing_intent')
         if (intent === 'buy') continue // Ignore buy orders because they are treating like sell orders (fix).
 
-        let trade_offer_url = getTradeOfferUrl()
+        let trade_offer_url = getTradeOfferUrl($listing)
 
         if (trade_offer_url) {
             $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON) // Adding the trade button to the listing.
@@ -116,44 +116,46 @@ export async function mainClassifieds() {
                 open(trade_offer_url, '_blank')
             })
         }
-
-        function getTradeOfferUrl() {
-            const user_link = $listing.querySelector('.user-link')
-            const offer_params = user_link!.getAttribute('data-offers-params')
-
-            if (offer_params) {
-                return `https://steamcommunity.com/tradeoffer/new/${offer_params}`
-            } else {
-                return undefined
-            }
-        }
-
-        function convertPriceToCurrencies(price_str: string) {
-            const regex = /\b(\d+(\.\d+)?)\s(key|keys|ref|refs)\b/g
-
-            function convertMatchesToJSON(match: any[]) {
-                const result = {}
-
-                const number = match[1]
-                let term = match[3]
-
-                if (term === "key" || term === "keys") term = "keys"
-                if (term === "ref" || term === "refs") term = "metal"
-
-                result[term] = parseFloat(number)
-                return result
-            }
-
-            const results = {}
-            let match: RegExpExecArray | null
-
-            while ((match = regex.exec(price_str)) !== null) {
-                const json = convertMatchesToJSON(match)
-
-                Object.assign(results, json)
-            }
-
-            return results
-        }
     }
+}
+
+function getTradeOfferUrl($listing: Element) {
+    const user_link = $listing.querySelector('.user-link')
+    const offer_params = user_link!.getAttribute('data-offers-params')
+
+    if (offer_params) {
+        return `https://steamcommunity.com/tradeoffer/new/${offer_params}`
+    } else {
+        return undefined
+    }
+}
+
+function convertPriceToCurrencies(price_str: string) {
+    const regex = /\b(\d+(\.\d+)?)\s(key|keys|ref|refs)\b/g
+
+    function convertMatchesToJSON(match: any[]) {
+        const result = {}
+
+        const number = match[1]
+        let term = match[3]
+
+        if (term === "key" || term === "keys") term = "keys"
+        if (term === "ref" || term === "refs") term = "metal"
+
+        result[term] = parseFloat(number)
+        return result
+    }
+
+    const results = {}
+    let match: RegExpExecArray | null
+
+    while ((match = regex.exec(price_str)) !== null) {
+        const json = convertMatchesToJSON(match)
+
+        Object.assign(results, json)
+    }
+
+    if (!results['keys']) results['keys'] = 0
+    if (!results['metal']) results['metal'] = 0
+    return results
 }

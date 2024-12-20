@@ -138,9 +138,10 @@ export async function mainTradeOffer() {
                 const your_currencies = currency_panel.items.getCurrenciesInInventory('UserYou')
                 const their_currencies = currency_panel.items.getCurrenciesInInventory('UserThem')
 
-                const balance = balanceCurrencies(your_currencies, their_currencies, currencies['keys'], currencies['metal'])
+                const balance = balanceCurrencies(your_currencies, their_currencies, currencies['keys'] * amount, (Math.round(currencies['metal'] / 0.05555555555555555) * amount) / 18)
 
                 if (balance['balanced']) {
+                    // FIXME crying emoji
                     const your = balance['your_currency_types']
                     const their = balance['their_currency_types']
 
@@ -148,14 +149,17 @@ export async function mainTradeOffer() {
                     let ref = your_currencies['ref'].slice(0, your['refined_amount'])
                     let rec = your_currencies['rec'].slice(0, your['reclaimed_amount'])
                     let scrap = your_currencies['scrap'].slice(0, your['scrap_amount'])
-
                     rg_items_to_give.push(...[...keys, ...ref, ...rec, ...scrap])
 
                     keys = their_currencies['key'].slice(0, their['key_amount'])
                     ref = their_currencies['ref'].slice(0, their['refined_amount'])
                     rec = their_currencies['rec'].slice(0, their['reclaimed_amount'])
                     scrap = their_currencies['scrap'].slice(0, their['scrap_amount'])
-                    rg_items_to_receive.push(...[...keys, ...ref, ...rec, ...scrap])
+                    const their_items_to_add = their['key_amount'] + their['refined_amount'] + their['reclaimed_amount'] + their['scrap_amount']
+
+                    if (their_items_to_add > 0) {
+                        rg_items_to_receive.push(...[...keys, ...ref, ...rec, ...scrap])
+                    }
                 } else {
                     alert('bruh not balanced')
                 }

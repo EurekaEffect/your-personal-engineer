@@ -1,5 +1,5 @@
 import {alert, error, getWindow, log, throwError} from "./Main";
-import {getRgItemByAssetId, getRgItemsByName, SetItemInTrade, SetItemsInTrade} from "./util/TradeOffer";
+import {getRgItemByAssetId, getRgItems, getRgItemsByName, SetItemInTrade, SetItemsInTrade} from "./util/TradeOffer";
 
 const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
     <div class="trade_box_bgheader active"></div>
@@ -18,13 +18,6 @@ const CURRENCY_PANEL = `<div id="currency-panel" class="your_items">
         </div>
     </div>
 </div>`
-
-const CURRENCY_CLASS_IDS = {
-    MANN_CO_SUPPLY_CRATE_KEY: '101785959',
-    REFINED_METAL: '2674',
-    RECLAIMED_METAL: '5564',
-    SCRAP_METAL: '2675'
-}
 
 let is_your_inventory_loaded = false
 let is_their_inventory_loaded = false
@@ -93,6 +86,9 @@ export async function mainTradeOffer() {
             throwError(error)
         }
 
+        const rg_items_to_give: any = []
+        const rg_items_to_receive: any = []
+
         if (intent === 'sell') {
             // Checking if the specified parameters are missing.
             if (!asset_id || !amount || !currencies) {
@@ -101,10 +97,6 @@ export async function mainTradeOffer() {
                 alert(error)
                 throwError(error)
             }
-
-            // Searching by asset_id.
-            const rg_items_to_give: any = []
-            const rg_items_to_receive: any = []
 
             // Handling their inventory.
             if (rg_items_to_receive) {
@@ -131,50 +123,71 @@ export async function mainTradeOffer() {
 
                 // Adding to the items to receive array.
                 rg_items_to_receive.push(...rg_items)
+
+                if (rg_items_to_receive.length === 0) {
+                    const error = `Item('s) has already been sold.`
+
+                    alert(error)
+                    throwError(error)
+                }
             }
 
             // Handling your inventory.
             if (rg_items_to_give) {
-                const your_currencies = currency_panel.items.getCurrenciesInInventory('UserYou')
-                const their_currencies = currency_panel.items.getCurrenciesInInventory('UserThem')
+                let half_scrap = Math.round(currencies['metal'] / 0.05555555555555555) // Converting metal to half-scrap for easier management.
 
-                const balance = balanceCurrencies(your_currencies, their_currencies, currencies['keys'] * amount, (Math.round(currencies['metal'] / 0.05555555555555555) * amount) / 18)
+                const items_found = rg_items_to_receive.length
+                // The 8 items are adjusted to your current currency, adding...
 
-                if (balance['balanced']) {
-                    // FIXME crying emoji
-                    const your = balance['your_currency_types']
-                    const their = balance['their_currency_types']
+                // Trying to pick item amount for our available currency.
+                while (rg_items_to_receive.length > 0) {
+                    // Adjusting the price to the item amount.
+                    let precise_amount = rg_items_to_receive.length
+                    let keys = currencies['keys'] * precise_amount
+                    let metal = (half_scrap * precise_amount) / 18
 
-                    let keys = your_currencies['key'].slice(0, your['key_amount'])
-                    let ref = your_currencies['ref'].slice(0, your['refined_amount'])
-                    let rec = your_currencies['rec'].slice(0, your['reclaimed_amount'])
-                    let scrap = your_currencies['scrap'].slice(0, your['scrap_amount'])
-                    rg_items_to_give.push(...[...keys, ...ref, ...rec, ...scrap])
+                    const trade_result = getCurrenciesForTrade(intent, keys, metal)
 
-                    keys = their_currencies['key'].slice(0, their['key_amount'])
-                    ref = their_currencies['ref'].slice(0, their['refined_amount'])
-                    rec = their_currencies['rec'].slice(0, their['reclaimed_amount'])
-                    scrap = their_currencies['scrap'].slice(0, their['scrap_amount'])
-                    const their_items_to_add = their['key_amount'] + their['refined_amount'] + their['reclaimed_amount'] + their['scrap_amount']
+                    if (trade_result['error_message'] === '') {
+                        // Checking for the item amount.
+                        const items_missing = amount - items_found
+                        const items_adjusted = rg_items_to_receive.length
 
-                    if (their_items_to_add > 0) {
-                        rg_items_to_receive.push(...[...keys, ...ref, ...rec, ...scrap])
+                        // Notifying the user if the items are missing.
+                        if (items_missing > 0 && items_adjusted < items_found) {
+                            alert(`${items_found} out of ${amount} items were found,\nand only ${items_adjusted} out of ${items_found} are adjusted to your available currency.\nAdding ${items_adjusted} items to the trade offer...`)
+                        } else if (items_missing > 0) {
+                            alert(`${items_found} out of ${amount} items were found,\nAdding ${items_adjusted} items to the trade offer...`)
+                        } else if (items_adjusted < items_found) {
+                            alert(`${items_adjusted} out of ${items_found} are adjusted to your available currency.\nAdding ${items_adjusted} items to the trade offer...`)
+                        }
+
+                        rg_items_to_give.push(...trade_result['rg_items_to_give'])
+                        rg_items_to_receive.push(...trade_result['rg_items_to_receive'])
+
+                        break
+                    } else {
+                        rg_items_to_receive.pop() // Removing the last element.
+
+                        if (rg_items_to_receive.length === 0) {
+                            alert(trade_result['error_message'])
+                            throwError(trade_result['error_message'])
+                        }
                     }
-                } else {
-                    alert('bruh not balanced')
                 }
             }
-
-            // Mapping to the asset ids.
-            const your_asset_ids = rg_items_to_give.map((rg_item: any) => rg_item['id'])
-            const their_asset_ids = rg_items_to_receive.map((rg_item: any) => rg_item['id'])
-
-            // Adding items to the trade offer.
-            await SetItemsInTrade(your_asset_ids)
-            await SetItemsInTrade(their_asset_ids)
         } else {
             alert('buy, not implemented.')
         }
+
+        // Mapping to the asset ids.
+        const your_asset_ids = rg_items_to_give.map((rg_item: any) => rg_item['id'])
+        const their_asset_ids = rg_items_to_receive.map((rg_item: any) => rg_item['id'])
+
+        // Adding items to the trade offer.
+        // Ignoring 'await' to make it asynchronous.
+        SetItemsInTrade(your_asset_ids)
+        SetItemsInTrade(their_asset_ids)
     })
 
     window.addEventListener('item_interaction', (event) => {
@@ -191,120 +204,264 @@ export async function mainTradeOffer() {
     })
 }
 
-function balanceCurrencies(your_currencies: Currencies, their_currencies: Currencies, keys_to_pay: number, metal_to_pay: number) {
-    type CurrencyTypeReport = {
-        key_amount: number,
-        refined_amount: number,
-        reclaimed_amount: number,
-        scrap_amount: number,
-        missing_half_scrap: number // If > 0, then missing metal.
+function getCurrenciesForTrade(intent: string, keys: number, metal: number) {
+    type TradeResult = {
+        rg_items_to_give: any[],
+        rg_items_to_receive: any[],
+        error_message: string
     }
 
-    function getCurrencyTypes(currencies: Currencies, keys_to_pay: number, metal_to_pay: number): CurrencyTypeReport {
-        let half_scrap = Math.round(metal_to_pay / 0.05555555555555555) // Converting metal to half-scrap for easier management.
+    const trade_result: TradeResult = {
+        rg_items_to_give: [],
+        rg_items_to_receive: [],
+        error_message: ''
+    }
 
-        // TODO: round to .11.
+    // Getting the currency types.
+    const currency_types = getCurrencyTypes(keys, metal)
 
-        // Calculating the refined amount.
-        let ref_amount = Math.floor(half_scrap / 18)
-        ref_amount = Math.min(currencies['ref'].length, ref_amount)
-        half_scrap = half_scrap - (ref_amount * 18)
+    if (intent === 'sell') {
+        // @ts-ignore
+        const [our_currency, change_1, error] = pickCurrency('UserYou', currency_types)
 
-        // Calculating the reclaimed amount.
-        let rec_amount = Math.floor(half_scrap / 6)
-        rec_amount = Math.min(currencies['rec'].length, rec_amount)
-        half_scrap = half_scrap - (rec_amount * 6)
+        if (Object.values(change_1).find((currency) => currency !== 0) || error) {
+            // @ts-ignore
+            const [their_currency, change_2, error] = pickCurrency('UserThem', change_1);
 
-        // Calculating the scrap amount.
-        let scrap_amount = Math.floor(half_scrap / 2)
-        scrap_amount = Math.min(currencies['scrap'].length, scrap_amount)
-        half_scrap = half_scrap - (scrap_amount * 2)
+            if (Object.values(change_2).find((currency) => currency !== 0) || error) {
+                trade_result['error_message'] = 'Could not balance currencies.'
+                return trade_result
+            }
 
-        return {
-            key_amount: keys_to_pay,
-            refined_amount: ref_amount,
-            reclaimed_amount: rec_amount,
-            scrap_amount: scrap_amount,
-            missing_half_scrap: half_scrap
+            // Adding the items to receive.
+            // @ts-ignore
+            for (let currency of their_currency) {
+                trade_result['rg_items_to_receive'].push(currency)
+            }
         }
-    }
 
-    const your_currency_types = getCurrencyTypes(your_currencies, keys_to_pay, metal_to_pay)
-    const their_currency_types = getCurrencyTypes(their_currencies, 0, 0)
-
-    if (your_currency_types['missing_half_scrap'] > 0) {
-        const your_missing_half_scrap = your_currency_types['missing_half_scrap']
-
-        if (your_missing_half_scrap < 18) {
-            let missing_half_scrap = (18 - your_missing_half_scrap)
-            console.log('missing hs ' + missing_half_scrap)
-
-            const their_currencies_to_check = [{
-                currencies: their_currencies['rec'],
-                name: 'reclaimed_amount',
-                metal: 0.33
-            }, {
-                currencies: their_currencies['scrap'],
-                name: 'scrap_amount',
-                metal: 0.11
-            }]
-
-            for (let currency_to_check of their_currencies_to_check) {
-                for (const unused of currency_to_check['currencies']) {
-                    let currency_half_scrap = Math.round(currency_to_check['metal'] / 0.05555555555555555) // Converting metal to half-scrap for easier management.
-                    const future_missing_half_scrap = missing_half_scrap - currency_half_scrap
-
-                    if (future_missing_half_scrap >= 0) {
-                        missing_half_scrap = future_missing_half_scrap;
-                        their_currency_types[currency_to_check['name']]++
-
-                        if (missing_half_scrap === 0) break
-                    }
-                }
-            }
-
-            if (missing_half_scrap === 0) {
-                const unused_refined_metal_amount = your_currencies['ref'].length - your_currency_types['refined_amount']
-
-                if (unused_refined_metal_amount > 0) {
-                    your_currency_types['refined_amount']++
-
-                    return {
-                        your_currency_types: your_currency_types,
-                        their_currency_types: their_currency_types,
-                        balanced: true
-                    }
-                } else {
-                    // Can't balance.
-                    return {
-                        your_currency_types: [],
-                        their_currency_types: [],
-                        balanced: false
-                    }
-                }
-            } else {
-                // Can't balance.
-                return {
-                    your_currency_types: [],
-                    their_currency_types: [],
-                    balanced: false
-                }
-            }
-        } else {
-            // Can't balance.
-            return {
-                your_currency_types: [],
-                their_currency_types: [],
-                balanced: false
-            }
+        // Adding the items to give.
+        // @ts-ignore
+        for (let currency of our_currency) {
+            trade_result['rg_items_to_give'].push(currency)
         }
     } else {
-        return {
-            your_currency_types: your_currency_types,
-            their_currency_types: [], // Currency to add, if your_currency_types['missing_half_scrap'] is 0 then there's no need to add their currency.
-            balanced: true
+        // @ts-ignore
+        const [their_currency, change_1] = pickCurrency('UserThem', currency_types);
+
+        if (Object.values(change_1).find((currency) => currency !== 0)) {
+            // @ts-ignore
+            const [our_currency, change_2] = pickCurrency('UserYou', change_1);
+
+            if (Object.values(change_2).find((currency) => currency !== 0)) {
+                trade_result['error_message'] = 'Could not balance currencies.'
+                return trade_result
+            }
+
+            // Adding the items to give.
+            for (let currency of our_currency) {
+                trade_result['rg_items_to_give'].push(currency)
+            }
+        }
+
+        // Adding the items to receive.
+        for (let currency of their_currency) {
+            trade_result['rg_items_to_receive'].push(currency)
         }
     }
+
+    return trade_result
+}
+
+function getCurrencyTypes(keys: number, metal: number): CurrencyTypes {
+    let half_scrap = Math.round(metal / 0.05555555555555555) // Converting metal to half-scrap for easier management.
+
+    // TODO: round to .11.
+
+    // Calculating the refined amount.
+    let ref_amount = Math.floor(half_scrap / 18)
+    half_scrap = half_scrap - (ref_amount * 18)
+
+    // Calculating the reclaimed amount.
+    let rec_amount = Math.floor(half_scrap / 6)
+    half_scrap = half_scrap - (rec_amount * 6)
+
+    // Calculating the scrap amount.
+    let scrap_amount = Math.floor(half_scrap / 2)
+    half_scrap = half_scrap - (scrap_amount * 2)
+
+    // Calculating the missing half-scrap.
+    // const total_half_scrap = Math.round(metal / 0.05555555555555555) // Converting metal to half-scrap for easier management.
+    // half_scrap = 0
+    // half_scrap = half_scrap + (ref_amount * 18)
+    // half_scrap = half_scrap + (rec_amount * 6)
+    // half_scrap = half_scrap + (scrap_amount * 2)
+    // half_scrap = total_half_scrap - half_scrap // Getting the difference.
+
+    return {
+        key_amount: keys,
+        refined_amount: ref_amount,
+        reclaimed_amount: rec_amount,
+        scrap_amount: scrap_amount
+    }
+}
+
+type CurrencyTypes = {
+    key_amount: number,
+    refined_amount: number,
+    reclaimed_amount: number,
+    scrap_amount: number
+}
+
+// Thanks Brom127 for the function!
+function pickCurrency(user: string, currency_types: CurrencyTypes) {
+    const inventory = getRgItems(user)
+    let {
+        key_amount,
+        refined_amount,
+        reclaimed_amount,
+        scrap_amount
+    } = currency_types
+
+    const rg_keys = inventory.filter((item: any) => item['name'] === 'Mann Co. Supply Crate Key')
+    const rg_refined = inventory.filter((item: any) => item['name'] === 'Refined Metal')
+    const rg_reclaimed = inventory.filter((item: any) => item['name'] === 'Reclaimed Metal')
+    const rg_scrap = inventory.filter((item: any) => item['name'] === 'Scrap Metal')
+
+    if (rg_keys.length < key_amount) return [[], [], 'Insufficient keys.']
+    if (rg_refined.length + rg_reclaimed.length / 3 + rg_scrap.length / 9 < refined_amount + reclaimed_amount / 3 + scrap_amount / 9) return [[], [], 'Insufficient metal.']
+
+    let leftover_ref = rg_refined.length - refined_amount;
+    let leftover_rec = rg_reclaimed.length - reclaimed_amount;
+    let leftover_scrap = rg_scrap.length - scrap_amount;
+    let change: CurrencyTypes = {
+        key_amount: 0,
+        refined_amount: 0,
+        reclaimed_amount: 0,
+        scrap_amount: 0
+    }
+
+    //use rec if not enough scrap
+    if (leftover_scrap < 0) {
+        leftover_scrap = -leftover_scrap;
+        reclaimed_amount += Math.ceil(leftover_scrap / 3);
+        leftover_rec -= Math.ceil(leftover_scrap / 3);
+        change['scrap_amount'] += 3 - (leftover_scrap % 3);
+        change['scrap_amount'] %= 3;
+        scrap_amount -= leftover_scrap;
+        leftover_scrap = 0;
+    }
+
+    //use ref if not enough rec
+    if (leftover_rec < 0) {
+        leftover_rec = -leftover_rec;
+        refined_amount += Math.ceil(leftover_rec / 3);
+        leftover_ref -= Math.ceil(leftover_rec / 3);
+        change['reclaimed_amount'] += 3 - (leftover_rec % 3);
+        change['reclaimed_amount'] %= 3;
+        reclaimed_amount -= leftover_rec;
+        leftover_rec = 0;
+    }
+
+    //use rec if not enough ref
+    while (leftover_ref < 0) {
+        if (leftover_rec >= -leftover_ref * 3) {
+            refined_amount -= -leftover_ref;
+            reclaimed_amount += -leftover_ref * 3;
+            leftover_rec -= -leftover_ref * 3;
+            leftover_ref = 0;
+        } else {
+            return [[], [], 'Could not balance currencies.'] // FIXME: There's a chance that you will have a necessary currency amount, Brom127 I need your help :(
+        }
+    }
+
+    //calculate change needed from other inventory
+    if (refined_amount != 0 && change['refined_amount'] != 0) {
+        let reduce = Math.min(refined_amount, change['refined_amount']);
+        refined_amount -= reduce;
+        change['refined_amount'] -= reduce;
+    }
+    if (reclaimed_amount != 0 && change['reclaimed_amount'] != 0) {
+        let reduce = Math.min(reclaimed_amount, change['reclaimed_amount']);
+        reclaimed_amount -= reduce;
+        change['reclaimed_amount'] -= reduce;
+    }
+    if (scrap_amount != 0 && change['scrap_amount'] != 0) {
+        let reduce = Math.min(scrap_amount, change['scrap_amount']);
+        scrap_amount -= reduce;
+        change['scrap_amount'] -= reduce;
+    }
+
+    //start taking items from random position; possible ranges are between 0 and length-amount
+    const key_start = Math.floor(Math.random() * (rg_keys.length - key_amount + 1));
+    const ref_start = Math.floor(Math.random() * (rg_refined.length - refined_amount + 1));
+    const rec_start = Math.floor(Math.random() * (rg_reclaimed.length - reclaimed_amount + 1));
+    const scrap_start = Math.floor(Math.random() * (rg_scrap.length - scrap_amount + 1));
+
+    //actually take the items
+    const take_keys = rg_keys.slice(key_start, key_start + key_amount);
+    const take_ref = rg_refined.slice(ref_start, ref_start + refined_amount);
+    const take_rec = rg_reclaimed.slice(rec_start, rec_start + reclaimed_amount);
+    const take_scrap = rg_scrap.slice(scrap_start, scrap_start + scrap_amount);
+    let items = take_keys;
+    items = items.concat(take_ref);
+    items = items.concat(take_rec);
+    items = items.concat(take_scrap);
+
+    //checks if anything went wrong. This should never happen but lets check anyways.
+    if (
+        key_amount < 0 ||
+        refined_amount < 0 ||
+        reclaimed_amount < 0 ||
+        scrap_amount < 0 ||
+        change.refined_amount < 0 ||
+        change.reclaimed_amount < 0 ||
+        change.scrap_amount < 0 ||
+        key_start < 0 ||
+        ref_start < 0 ||
+        rec_start < 0 ||
+        scrap_start < 0 ||
+        key_amount == undefined ||
+        refined_amount == undefined ||
+        reclaimed_amount == undefined ||
+        scrap_amount == undefined ||
+        key_amount > rg_keys.length ||
+        refined_amount > rg_refined.length ||
+        reclaimed_amount > rg_reclaimed.length ||
+        scrap_amount > rg_scrap.length ||
+        items.length < key_amount ||
+        take_keys.length != key_amount ||
+        take_ref.length != refined_amount ||
+        take_rec.length != reclaimed_amount ||
+        take_scrap.length != scrap_amount
+    ) {
+        console.log("Something went wrong balancing currencies:");
+        console.log(
+            [
+                rg_keys.length,
+                rg_refined.length,
+                rg_reclaimed.length,
+                rg_scrap.length,
+                key_amount,
+                refined_amount,
+                reclaimed_amount,
+                scrap_amount,
+                key_start,
+                ref_start,
+                rec_start,
+                scrap_start,
+                take_keys,
+                take_ref,
+                take_rec,
+                take_scrap,
+                JSON.stringify(items, undefined, 4),
+            ].join("\n")
+        );
+
+        return [[], [], 'Could not balance currencies.']
+    }
+
+    return [items, change];
 }
 
 function listenForInteractions() {
@@ -407,7 +564,7 @@ class CurrencyPanel {
         // Setting up the .onclick event.
         this.get()
             ?.querySelector('#add-currency')
-            ?.addEventListener('click', () => {
+            ?.addEventListener('click', async () => {
                 const $keys = document.querySelector('#keys')
                 const $metal = document.querySelector('#metal')
 
@@ -474,7 +631,12 @@ class CurrencyPanel {
                         ...currencies['scrap'].slice(0, scrap_amount)
                     ].map((item) => item['id'])
 
-                    SetItemsInTrade(asset_ids_to_add) // Adding items to the trade offer.
+                    const button = this.get()?.querySelector('#add-currency')
+
+                    button?.classList.add('disabled')
+                    await SetItemsInTrade(asset_ids_to_add) // Adding items to the trade offer.
+                    button?.classList.remove('disabled')
+
                     this.updateCurrencies(current_user) // Have to update it manually.
                 }
             })

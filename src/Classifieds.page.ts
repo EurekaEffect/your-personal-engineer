@@ -62,7 +62,7 @@ export async function mainClassifieds() {
         let intent = $item!.getAttribute('data-listing_intent')
         if (intent === 'buy') continue // Ignore buy orders because they are treating like sell orders (fix).
 
-        let trade_offer_url = getTradeOfferUrl($listing)
+        const trade_offer_url = getTradeOfferUrl($listing)
 
         if (trade_offer_url) {
             $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON) // Adding the trade button to the listing.
@@ -95,7 +95,7 @@ export async function mainClassifieds() {
 
             $trade_button!.addEventListener('click', () => {
                 let asset_id = $item!.getAttribute('data-id')
-                let item_name = $item!.getAttribute('title')
+                let item_name = $item!.getAttribute('data-name')
                 let intent = $item!.getAttribute('data-listing_intent')
                 let amount = $trade_button!.getAttribute('ype.amount')
                 let price = $item!.getAttribute('data-listing_price')
@@ -112,8 +112,8 @@ export async function mainClassifieds() {
                 }
 
                 // Opening a new window with trade offer page.
-                trade_offer_url = `${trade_offer_url}&ype=${JSON.stringify(ype)}`
-                open(trade_offer_url, '_blank')
+                const trade_offer_url_with_ype = `${trade_offer_url}&ype=${JSON.stringify(ype)}`
+                open(trade_offer_url_with_ype, '_blank')
             })
         }
     }

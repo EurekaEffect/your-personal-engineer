@@ -44,8 +44,6 @@ export async function SetItemInTrade(asset_id: string) {
             if (is_in_trade_slot) {
                 reject(`Item with id '${asset_id}' is already in a trade slot.`)
             } else {
-                getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
-
                 await new Promise((resolve) => {
                     setTimeout(() => {
                         getWindow()['CTradeOfferStateManager']['SetItemInTrade'](item, 0, 1)
@@ -117,4 +115,8 @@ export function removeItemFromTradeOffer(asset_id: string) {}
 
 export function refreshTradeStatus() {
     getWindow()['RefreshTradeStatus'](getWindow()['g_rgCurrentTradeStatus'])
+}
+
+export function getRgItems(user: string) {
+    return Object.values(getWindow()[user]['getInventory'](440, 2)['rgInventory'])
 }

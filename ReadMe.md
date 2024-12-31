@@ -7,8 +7,11 @@
 
 ### Features
 
-- **Ability to select the item amount that you want to trade (backpack.tf).**
-- **A menu for quick access to the currencies (Trade Offer).**
+- **A feature that allows you to select the amount of item that you want to buy.**
+- **A menu for quick access to the currencies.**
+- **Panel, that shows fabricator's cost to craft in %.**
+
+![image](https://github.com/user-attachments/assets/f68e6413-9785-4af5-8467-24d7d6bc1dab)
 ---
 
 ### How to Install

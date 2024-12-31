@@ -5,11 +5,18 @@
 
 import {isTradeOfferUrl, mainTradeOffer} from "./TradeOffer.page";
 import {isClassifiedsUrl, mainClassifieds} from "./Classifieds.page";
+import {isBackpackUrl, mainBackpack} from "./Backpack.page";
 
 // Main code.
 (async function () {
+    const is_backpack_page = isBackpackUrl(location.href)
+
     const is_trade_offer_page = isTradeOfferUrl(location.href)
     const is_classifieds_page = isClassifiedsUrl(location.href)
+
+    if (is_backpack_page) {
+        await mainBackpack()
+    }
 
     if (is_trade_offer_page) {
         await mainTradeOffer()

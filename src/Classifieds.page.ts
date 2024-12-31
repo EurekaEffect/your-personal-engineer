@@ -54,32 +54,29 @@ export async function mainClassifieds() {
     // @ts-ignore, I hate this.
     for (const $listing of listings) {
         const $item = $listing.querySelector('.item')
+        const $body = $listing.querySelector('.listing-body')
         const $buttons = $listing.querySelector('.listing-buttons')
 
         let price = $item!.getAttribute('data-listing_price')
         if (!price) continue // Marketplace.tf listings.
 
-        let intent = $item!.getAttribute('data-listing_intent')
-        if (intent === 'buy') continue // Ignore buy orders because they are treating like sell orders (fix).
-
         const trade_offer_url = getTradeOfferUrl($listing)
 
         if (trade_offer_url) {
-            $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON) // Adding the trade button to the listing.
+            // Adding the trade button to the listing.
+            $buttons!.insertAdjacentHTML('beforeend', TRADE_BUTTON)
 
             // Searching the previously added trade button to set up 'onclick' event in it.
             const $trade_button = $listing.querySelector('.btn.btn-bottom.btn-xs.btn-success.hover-able')
             const $popup_panel = $trade_button.querySelector('.popup-panel')
 
-            // FIXME TEMPORARY FIX
+            // Handling the popup.
             $trade_button!.addEventListener('mouseenter', () => {
                 $popup_panel!.style.display = 'block'
             })
-
             $popup_panel!.addEventListener('mouseleave', () => {
                 $popup_panel!.style.display = 'none'
             })
-            // FIXME TEMPORARY FIX
 
             // Searching for the icon.
             let $icon = $listing.querySelector('.fa.fa-sw.fa-flash')
@@ -94,9 +91,9 @@ export async function mainClassifieds() {
             $trade_button!.prepend($icon) // Adding the icon to the trade button.
 
             $trade_button!.addEventListener('click', () => {
-                let asset_id = $item!.getAttribute('data-id')
-                let item_name = $item!.getAttribute('data-name')
                 let intent = $item!.getAttribute('data-listing_intent')
+                let asset_id = $item!.getAttribute('data-id')
+                let item = handleAndGetItemData($item, $body)
                 let amount = $trade_button!.getAttribute('ype.amount')
                 let price = $item!.getAttribute('data-listing_price')
 
@@ -104,9 +101,10 @@ export async function mainClassifieds() {
 
                 // Creating a config based on listing's attributes.
                 const ype = {
-                    asset_id: (!asset_id || asset_id.length === 0) ? undefined : asset_id,
-                    item_name: item_name,
                     intent: intent,
+                    asset_id: (!asset_id || asset_id.length === 0) ? undefined : asset_id,
+                    item_name: item['item_name'],
+                    item_data: item['item_data'],
                     amount: amount,
                     currencies: currencies
                 }
@@ -116,6 +114,24 @@ export async function mainClassifieds() {
                 open(trade_offer_url_with_ype, '_blank')
             })
         }
+    }
+}
+
+function handleAndGetItemData($item: Element, $body: Element) {
+    let item_name = $body?.querySelector('h5')?.firstChild?.textContent?.trim()
+    let item_data = {}
+
+    const craftable = $item.getAttribute('data-craftable')
+
+    if (craftable === '0') {
+        // Removing 'Non-Craftable' from the name.
+        item_name = item_name?.substring(14)
+        item_data['craftable'] = false
+    }
+
+    return {
+        item_name: item_name,
+        item_data: item_data
     }
 }
 

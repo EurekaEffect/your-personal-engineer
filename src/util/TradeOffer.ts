@@ -81,6 +81,15 @@ export function getRgItemsByName(user: string, item_name_to_search: string): any
 
         if (item_name === item_name_to_search) {
             asset_ids.push(item)
+        } else {
+            // Double checking.
+            if (item_name.startsWith('The ')) {
+                const edited_item_name = item_name.substring(4)
+
+                if (edited_item_name === item_name_to_search) {
+                    asset_ids.push(item)
+                }
+            }
         }
     }
 

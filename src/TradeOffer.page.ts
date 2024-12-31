@@ -68,9 +68,10 @@ export async function mainTradeOffer() {
         const json = ype ? JSON.parse(ype) : {}
 
         let {
+            intent,
             asset_id,
             item_name,
-            intent,
+            item_data,
             amount,
             currencies
         } = json
@@ -79,20 +80,22 @@ export async function mainTradeOffer() {
         if (!ype) return
 
         // Checking if the 'intent' parameter is missing.
-        if (!intent) {
-            const error = `Missing parameters: 'intent'.`
+        if (!intent || !item_data || !currencies) {
+            const error = `Missing parameters: 'intent', 'item_data' or 'currencies'.`
 
             alert(error)
             throwError(error)
         }
+
+
 
         const rg_items_to_give: any = []
         const rg_items_to_receive: any = []
 
         if (intent === 'sell') {
             // Checking if the specified parameters are missing.
-            if (!asset_id || !amount || !currencies) {
-                const error = `Missing parameters: 'asset_id', 'amount' or 'currencies'.`
+            if (!asset_id || !amount) {
+                const error = `Missing parameters: 'asset_id' or 'amount'.`
 
                 alert(error)
                 throwError(error)
@@ -116,8 +119,27 @@ export async function mainTradeOffer() {
 
                 // Searching by item_name.
                 let rg_items = getRgItemsByName('UserThem', item_name)
+
                 // Removing the item with asset_id if presents.
                 if (rg_item) rg_items = rg_items.filter((rg_item: any) => rg_item['id'] != asset_id)
+                // Checking for craftable parameter.
+                if ('craftable' in item_data) {
+                    const craftable = item_data['craftable']
+
+                    rg_items = rg_items.filter((rg_item: any) => {
+                        if ('descriptions' in rg_item) {
+                            const is_item_non_craftable = Object.values(rg_item['descriptions']).find((description: any) => {
+                                return description['value'] === '( Not Usable in Crafting )'
+                            })
+
+                            if (craftable && !is_item_non_craftable) return true
+                            if (!craftable && is_item_non_craftable) return true
+                        }
+
+                        return false
+                    })
+                }
+
                 // Limiting to the necessary amount, including the item with asset_id in rg_items_to_receive.
                 rg_items = rg_items.slice(0, (amount - rg_items_to_receive.length))
 
@@ -137,7 +159,6 @@ export async function mainTradeOffer() {
                 let half_scrap = Math.round(currencies['metal'] / 0.05555555555555555) // Converting metal to half-scrap for easier management.
 
                 const items_found = rg_items_to_receive.length
-                // The 8 items are adjusted to your current currency, adding...
 
                 // Trying to pick item amount for our available currency.
                 while (rg_items_to_receive.length > 0) {
@@ -177,7 +198,102 @@ export async function mainTradeOffer() {
                 }
             }
         } else {
-            alert('buy, not implemented.')
+            // Checking if the specified parameters are missing.
+            if (!amount || !currencies) {
+                const error = `Missing parameters: 'amount' or 'currencies'.`
+
+                alert(error)
+                throwError(error)
+            }
+
+            // Handling your inventory.
+            if (rg_items_to_give) {
+                // Checking if the 'item_name' parameter is missing.
+                if (!item_name) {
+                    const error = `Missing parameters: 'item_name'.`
+
+                    alert(error)
+                    throwError(error)
+                }
+
+                // Searching by item_name.
+                let rg_items = getRgItemsByName('UserYou', item_name)
+
+                // Checking for craftable parameter.
+                if ('craftable' in item_data) {
+                    const craftable = item_data['craftable']
+
+                    rg_items = rg_items.filter((rg_item: any) => {
+                        if ('descriptions' in rg_item) {
+                            const is_item_non_craftable = Object.values(rg_item['descriptions']).find((description: any) => {
+                                return description['value'] === '( Not Usable in Crafting )'
+                            })
+
+                            if (craftable && !is_item_non_craftable) return true
+                            if (!craftable && is_item_non_craftable) return true
+                        }
+
+                        return false
+                    })
+                }
+
+                // Limiting to the necessary amount, including the item with asset_id in rg_items_to_receive.
+                rg_items = rg_items.slice(0, (amount - rg_items_to_give.length))
+
+                // Adding to the items to give array.
+                rg_items_to_give.push(...rg_items)
+
+                if (rg_items_to_give.length === 0) {
+                    const error = `Item('s) were not found.`
+
+                    alert(error)
+                    throwError(error)
+                }
+            }
+
+            // Handling their inventory.
+            if (rg_items_to_receive) {
+                let half_scrap = Math.round(currencies['metal'] / 0.05555555555555555) // Converting metal to half-scrap for easier management.
+
+                const items_found = rg_items_to_give.length
+
+                // Trying to pick item amount for their available currency.
+                while (rg_items_to_give.length > 0) {
+                    // Adjusting the price to the item amount.
+                    let precise_amount = rg_items_to_give.length
+                    let keys = currencies['keys'] * precise_amount
+                    let metal = (half_scrap * precise_amount) / 18
+
+                    const trade_result = getCurrenciesForTrade(intent, keys, metal)
+
+                    if (trade_result['error_message'] === '') {
+                        // Checking for the item amount.
+                        const items_missing = amount - items_found
+                        const items_adjusted = rg_items_to_give.length
+
+                        // Notifying the user if the items are missing.
+                        if (items_missing > 0 && items_adjusted < items_found) {
+                            alert(`${items_found} out of ${amount} items were found,\nand only ${items_adjusted} out of ${items_found} are adjusted to their available currency.\nAdding ${items_adjusted} items to the trade offer...`)
+                        } else if (items_missing > 0) {
+                            alert(`${items_found} out of ${amount} items were found,\nAdding ${items_adjusted} items to the trade offer...`)
+                        } else if (items_adjusted < items_found) {
+                            alert(`${items_adjusted} out of ${items_found} are adjusted to their available currency.\nAdding ${items_adjusted} items to the trade offer...`)
+                        }
+
+                        rg_items_to_give.push(...trade_result['rg_items_to_receive'])
+                        rg_items_to_receive.push(...trade_result['rg_items_to_give'])
+
+                        break
+                    } else {
+                        rg_items_to_give.pop() // Removing the last element.
+
+                        if (rg_items_to_give.length === 0) {
+                            alert(trade_result['error_message'])
+                            throwError(trade_result['error_message'])
+                        }
+                    }
+                }
+            }
         }
 
         // Mapping to the asset ids.
@@ -341,7 +457,7 @@ function pickCurrency(user: string, currency_types: CurrencyTypes) {
         scrap_amount: 0
     }
 
-    //use rec if not enough scrap
+    // use rec if not enough scrap
     if (leftover_scrap < 0) {
         leftover_scrap = -leftover_scrap;
         reclaimed_amount += Math.ceil(leftover_scrap / 3);
@@ -371,7 +487,7 @@ function pickCurrency(user: string, currency_types: CurrencyTypes) {
             leftover_rec -= -leftover_ref * 3;
             leftover_ref = 0;
         } else {
-            return [[], [], 'Could not balance currencies.'] // FIXME: There's a chance that you will have a necessary currency amount, Brom127 I need your help :(
+            return [[], [], 'Could not balance currencies.'];
         }
     }
 
@@ -646,6 +762,14 @@ class CurrencyPanel {
         return document.querySelector('#currency-panel')
     }
 
+    setKeys(keys: number) {
+        this.get()!.querySelector('#keys')!['value'] = keys
+    }
+
+    setMetal(metal: number) {
+        this.get()!.querySelector('#metal')!['value'] = metal
+    }
+
     showWarning(message: string) {
         const $warning_text = document.querySelector('#warning-text')
         $warning_text!.textContent = message
@@ -682,20 +806,6 @@ class CurrencyPanel {
         } else {
             throwError(`Element '${item_id}' was not found.`)
         }
-    }
-
-    getItems() {
-        return this.items
-    }
-
-    updateCurrencyPanelInfoAndClick(keys: number, metal: number) {
-        const $keys = document.querySelector('#keys')
-        const $metal = document.querySelector('#metal')
-        const $add_currency = document.querySelector('#add-currency')
-
-        $keys!['value'] = keys
-        $metal!['value'] = metal
-        $add_currency!['click']()
     }
 }
 

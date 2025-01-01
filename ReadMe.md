@@ -13,8 +13,8 @@
 - **Approximate sell price on tradeit.gg.**
 - **Filter out unavailable items on tradeit.gg.**
 
-![image](https://github.com/user-attachments/assets/af6239f7-a5af-4181-8f84-9a10e82c0bcf)
-![image](https://github.com/user-attachments/assets/a1f73ad0-c775-4200-ba78-887b9c266840)
+![image](https://github.com/user-attachments/assets/af6239f7-a5af-4181-8f84-9a10e82c0bcf)<br>
+![image](https://github.com/user-attachments/assets/a1f73ad0-c775-4200-ba78-887b9c266840)<br>
 ![image](https://github.com/user-attachments/assets/f68e6413-9785-4af5-8467-24d7d6bc1dab)
 ---
 

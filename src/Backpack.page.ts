@@ -1,4 +1,5 @@
 import {getCompletePercentage, getKillstreakItemAmount, getNeededInput} from "./util/RoboPartCalculator";
+import {listenForDynamicallyAddedItems} from "./util/DocumentHelper";
 
 export function isBackpackUrl(url: string) {
     return /^https:\/\/backpack\.tf.+$/.test(url)
@@ -24,11 +25,14 @@ export async function mainBackpack() {
     })
 
     // Listening for dynamically added items.
-    listenForDynamicallyAddedItems()
+    listenForDynamicallyAddedItems('item', 'backpack.tf')
 }
 
 window.addEventListener('item_added', (event) => {
     const $item: Element = event['detail']['item']
+    const initiator: string = event['detail']['initiator']
+    if (initiator !== 'backpack.tf') return
+
     const data_name = $item.getAttribute('data-name')
     if (!data_name) return false
 
@@ -43,40 +47,6 @@ window.addEventListener('item_added', (event) => {
         applyInfoPanelToFabricator($item, complete_percentage, ks_needed_to_craft)
     }
 })
-
-function listenForDynamicallyAddedItems() {
-    function checkForItemClass(node: globalThis.Node) {
-        if (node.nodeType === 1 && node['classList'].contains('item')) {
-            const event = new CustomEvent('item_added', {
-                detail: {
-                    item: node
-                }
-            })
-            window.dispatchEvent(event)
-        }
-
-        if (node.nodeType === 1 && node['children'].length > 0) {
-            for (let child of node['children']) {
-                checkForItemClass(child)
-            }
-        }
-    }
-
-    const observer = new MutationObserver((mutationsList, observer) => {
-        for (let mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                mutation.addedNodes.forEach(node => {
-                    checkForItemClass(node);
-                })
-            }
-        }
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-}
 
 function applyInfoPanelToFabricator($item: Element | globalThis.Node, complete_percentage: number, ks_needed_to_craft: number) {
     const color = getPercentageColor(complete_percentage)

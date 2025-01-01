@@ -7,9 +7,11 @@
 
 ### Features
 
-- **A feature that allows you to select the amount of item that you want to buy.**
-- **A menu for quick access to the currencies.**
-- **Panel, that shows fabricator's cost to craft in %.**
+- **Select the amount of items you want to buy from the listing.**
+- **A menu for quick access to the currencies in the trade offer.**
+- **Quick view of the fabricator's cost to craft in %.**
+- **Approximate sell price on tradeit.gg.**
+- **Filter out unavailable items on tradeit.gg.**
 
 ![image](https://github.com/user-attachments/assets/f68e6413-9785-4af5-8467-24d7d6bc1dab)
 ---

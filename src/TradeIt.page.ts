@@ -3,7 +3,7 @@ import {listenForDynamicallyAddedItems} from "./util/DocumentHelper"
 const $site_element = document.querySelector('.site-inventory') as Element
 
 export function isTradeItUrl(url: string) {
-    return /^https:\/\/tradeit.gg\/tf2.+$/.test(url)
+    return /^https:\/\/tradeit.gg.+$/.test(url)
 }
 
 export async function mainTradeIt() {

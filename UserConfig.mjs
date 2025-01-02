@@ -17,7 +17,7 @@ const content = `// ==UserScript==
 
 // @match           *://backpack.tf/*
 // @match           *://steamcommunity.com/tradeoffer/new*
-// @match           *://tradeit.gg/tf2/*
+// @match           *://tradeit.gg/*
 
 // @run-at          document-idle
 // ==/UserScript==`;
